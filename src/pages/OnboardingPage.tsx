@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { ROUTES } from '@/utils/constants'
 
 const slides = [
   {
@@ -133,6 +134,17 @@ export function OnboardingPage() {
           >
             Sign In
           </button>
+        </p>
+
+        {/* Legal links */}
+        <p className="text-center text-gray-600 text-xs mt-6">
+          <Link to={ROUTES.PRIVACY_POLICY} className="hover:text-gray-400 transition-colors">
+            Privacy Policy
+          </Link>
+          {' · '}
+          <Link to={ROUTES.TERMS_OF_SERVICE} className="hover:text-gray-400 transition-colors">
+            Terms of Service
+          </Link>
         </p>
       </div>
     </div>
