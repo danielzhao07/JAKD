@@ -164,6 +164,8 @@ export const ROUTES = {
   ONBOARDING: '/onboarding',
   LOGIN: '/login',
   SIGNUP: '/signup',
+  PRIVACY_POLICY: '/privacy-policy',
+  TERMS_OF_SERVICE: '/terms-of-service',
   HOME: '/',
   WORKOUT: '/workout',
   MANUAL_ENTRY: '/manual-entry',

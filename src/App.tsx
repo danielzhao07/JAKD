@@ -23,6 +23,8 @@ import { ActiveWorkoutPage } from '@/pages/ActiveWorkoutPage'
 import { SaveWorkoutPage } from '@/pages/SaveWorkoutPage'
 import { ExercisesPage } from '@/pages/ExercisesPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage'
+import { TermsOfServicePage } from '@/pages/TermsOfServicePage'
 import { ROUTES } from '@/utils/constants'
 
 const queryClient = new QueryClient({
@@ -82,6 +84,8 @@ function AppRoutes() {
           <SignUpPage />
         }
       />
+      <Route path={ROUTES.PRIVACY_POLICY} element={<PrivacyPolicyPage />} />
+      <Route path={ROUTES.TERMS_OF_SERVICE} element={<TermsOfServicePage />} />
       <Route
         path={ROUTES.HOME}
         element={

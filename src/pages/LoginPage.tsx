@@ -183,6 +183,17 @@ export function LoginPage() {
               Signup
             </Link>
           </p>
+
+          {/* Legal links */}
+          <p className="text-center text-gray-500 text-xs mt-4">
+            <Link to={ROUTES.PRIVACY_POLICY} className="hover:text-gray-300 transition-colors">
+              Privacy Policy
+            </Link>
+            {' · '}
+            <Link to={ROUTES.TERMS_OF_SERVICE} className="hover:text-gray-300 transition-colors">
+              Terms of Service
+            </Link>
+          </p>
         </div>
       </div>
 

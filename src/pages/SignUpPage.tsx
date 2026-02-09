@@ -215,6 +215,18 @@ export function SignUpPage() {
               Sign in
             </Link>
           </p>
+
+          {/* Legal links */}
+          <p className="text-center text-gray-500 text-xs mt-4">
+            By signing up, you agree to our{' '}
+            <Link to={ROUTES.TERMS_OF_SERVICE} className="text-gray-400 hover:text-gray-300 transition-colors">
+              Terms of Service
+            </Link>
+            {' and '}
+            <Link to={ROUTES.PRIVACY_POLICY} className="text-gray-400 hover:text-gray-300 transition-colors">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
 
