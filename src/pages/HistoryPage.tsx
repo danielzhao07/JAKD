@@ -43,7 +43,7 @@ function WorkoutSessionCard({ session, onDelete }: { session: WorkoutSessionMode
   }
   
   return (
-    <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
+    <div className="bg-dark-800 border border-dark-700 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full p-4 text-left"
@@ -82,7 +82,7 @@ function WorkoutSessionCard({ session, onDelete }: { session: WorkoutSessionMode
           {session.exercisesData.map((exercise, idx) => (
             <div key={idx} className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center">
+                <div className="w-8 h-8 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center">
                   <span className="text-cyan-400 text-xs font-bold">
                     {exercise.exerciseName.charAt(0)}
                   </span>
@@ -116,7 +116,7 @@ function WorkoutSessionCard({ session, onDelete }: { session: WorkoutSessionMode
             <img 
               src={session.photoUrl} 
               alt="Workout" 
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-48 object-cover"
             />
           )}
           
@@ -581,7 +581,7 @@ export function HistoryPage() {
       <h1 className="text-2xl font-bold mb-6">History</h1>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-sm text-red-400 mb-4">
+        <div className="bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400 mb-4">
           {error}
         </div>
       )}
@@ -590,7 +590,7 @@ export function HistoryPage() {
       <div className="flex gap-2 mb-6 overflow-x-auto">
         <button
           onClick={() => setActiveSection('workouts')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
+          className={`px-4 py-2 font-medium whitespace-nowrap transition-all duration-200 ${
             activeSection === 'workouts'
               ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
               : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
@@ -600,7 +600,7 @@ export function HistoryPage() {
         </button>
         <button
           onClick={() => setActiveSection('statistics')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
+          className={`px-4 py-2 font-medium whitespace-nowrap transition-all duration-200 ${
             activeSection === 'statistics'
               ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
               : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
@@ -610,7 +610,7 @@ export function HistoryPage() {
         </button>
         <button
           onClick={() => setActiveSection('videos')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
+          className={`px-4 py-2 font-medium whitespace-nowrap transition-all duration-200 ${
             activeSection === 'videos'
               ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
               : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
@@ -626,19 +626,19 @@ export function HistoryPage() {
           {/* Session Stats Summary */}
           {workoutSessions.length > 0 && (
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+              <div className="bg-dark-800 p-4 border border-dark-700">
                 <p className="text-gray-500 text-xs mb-1">Total Workouts</p>
                 <p className="text-2xl font-bold text-white">{sessionStats.totalSessions}</p>
               </div>
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+              <div className="bg-dark-800 p-4 border border-dark-700">
                 <p className="text-gray-500 text-xs mb-1">Total Volume</p>
                 <p className="text-2xl font-bold text-white">{Math.round(sessionStats.totalVolume).toLocaleString()} <span className="text-sm text-gray-400">lbs</span></p>
               </div>
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+              <div className="bg-dark-800 p-4 border border-dark-700">
                 <p className="text-gray-500 text-xs mb-1">Total Time</p>
                 <p className="text-2xl font-bold text-cyan-400">{Math.round(sessionStats.totalDuration / 60)} <span className="text-sm text-gray-400">min</span></p>
               </div>
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+              <div className="bg-dark-800 p-4 border border-dark-700">
                 <p className="text-gray-500 text-xs mb-1">Sets Completed</p>
                 <p className="text-2xl font-bold text-green-400">{sessionStats.totalSets}</p>
               </div>
@@ -719,7 +719,7 @@ export function HistoryPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('calendar')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-2 transition-all duration-200 ${
                   statsView === 'calendar'
                     ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                     : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
@@ -729,7 +729,7 @@ export function HistoryPage() {
               </button>
               <button
                 onClick={() => setStatsView('charts')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-2 transition-all duration-200 ${
                   statsView === 'charts'
                     ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                     : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
@@ -744,14 +744,14 @@ export function HistoryPage() {
             <>
               {/* Streak Info */}
               <div className="flex gap-4">
-                <div className="flex items-center gap-2 bg-dark-800 rounded-lg px-4 py-2">
+                <div className="flex items-center gap-2 bg-dark-800 px-4 py-2">
                   <span className="text-2xl">🔥</span>
                   <div>
                     <p className="text-white font-semibold">{stats.currentStreak} day streak</p>
                     <p className="text-xs text-gray-400">Keep it up!</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-dark-800 rounded-lg px-4 py-2">
+                <div className="flex items-center gap-2 bg-dark-800 px-4 py-2">
                   <span className="text-2xl">🌙</span>
                   <div>
                     <p className="text-white font-semibold">{stats.restDays} rest days</p>
@@ -764,7 +764,7 @@ export function HistoryPage() {
               <div className="relative">
                 <button
                   onClick={() => setCalendarDropdownOpen(!calendarDropdownOpen)}
-                  className="w-full bg-dark-800 rounded-lg px-4 py-3 flex items-center justify-between text-white hover:bg-dark-700 transition-colors"
+                  className="w-full bg-dark-800 px-4 py-3 flex items-center justify-between text-white hover:bg-dark-700 transition-colors"
                 >
                   <span className="font-medium">
                     {calendarView === 'month' ? 'Month' : 'Year'}
@@ -773,13 +773,13 @@ export function HistoryPage() {
                 </button>
                 
                 {calendarDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 rounded-lg shadow-lg border border-dark-700 z-10">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 shadow-lg border border-dark-700 z-10">
                     <button
                       onClick={() => {
                         setCalendarView('month')
                         setCalendarDropdownOpen(false)
                       }}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors first:rounded-t-lg"
+                      className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors"
                     >
                       Month
                     </button>
@@ -788,7 +788,7 @@ export function HistoryPage() {
                         setCalendarView('year')
                         setCalendarDropdownOpen(false)
                       }}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors last:rounded-b-lg"
+                      className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors"
                     >
                       Year
                     </button>
@@ -815,7 +815,7 @@ export function HistoryPage() {
                       {stats.currentMonthCalendar.map((day, i) => (
                         <div
                           key={i}
-                          className={`aspect-square flex items-center justify-center text-sm rounded-lg ${
+                          className={`aspect-square flex items-center justify-center text-sm ${
                             !day
                               ? ''
                               : day.isToday
@@ -847,7 +847,7 @@ export function HistoryPage() {
                       {stats.prevMonthCalendar.map((day, i) => (
                         <div
                           key={i}
-                          className={`aspect-square flex items-center justify-center text-sm rounded-lg ${
+                          className={`aspect-square flex items-center justify-center text-sm ${
                             !day
                               ? ''
                               : day.hasWorkout
@@ -864,11 +864,11 @@ export function HistoryPage() {
                   {/* Legend */}
                   <div className="flex items-center gap-4 text-xs px-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-500/40" />
+                      <div className="w-4 h-4 bg-cyan-500/20 border border-cyan-500/40" />
                       <span className="text-gray-400">Workout Day</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-cyan-500/20 ring-2 ring-cyan-500" />
+                      <div className="w-4 h-4 bg-cyan-500/20 ring-2 ring-cyan-500" />
                       <span className="text-gray-400">Today</span>
                     </div>
                   </div>
@@ -892,7 +892,7 @@ export function HistoryPage() {
                           {calendar.map((day, i) => (
                             <div
                               key={i}
-                              className={`aspect-square flex items-center justify-center text-[10px] rounded ${
+                              className={`aspect-square flex items-center justify-center text-[10px] ${
                                 !day
                                   ? ''
                                   : day.isToday
@@ -921,7 +921,7 @@ export function HistoryPage() {
                 <div className="relative mb-6">
                   <button
                     onClick={() => setMuscleDistributionDropdownOpen(!muscleDistributionDropdownOpen)}
-                    className="w-full bg-dark-800 text-white px-4 py-3 rounded-xl flex items-center justify-between"
+                    className="w-full bg-dark-800 text-white px-4 py-3 flex items-center justify-between"
                   >
                     <span>
                       {muscleDistributionPeriod === 'week' && 'Last 7 days'}
@@ -935,7 +935,7 @@ export function HistoryPage() {
                   </button>
                   
                   {muscleDistributionDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 rounded-xl overflow-hidden z-10 border border-dark-700">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 overflow-hidden z-10 border border-dark-700">
                       <button
                         onClick={() => {
                           setMuscleDistributionPeriod('week')
@@ -1072,17 +1072,17 @@ export function HistoryPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowVideoStats(!showVideoStats)}
-                className="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white transition-colors"
               >
                 <BarChart3 className="w-4 h-4" />
                 <span className="text-sm">Stats</span>
               </button>
               
               {showVideoStats && (
-                <div className="flex gap-1 bg-dark-900 rounded-lg p-1">
+                <div className="flex gap-1 bg-dark-900 p-1">
                   <button
                     onClick={() => setVideoStatsView('stats')}
-                    className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
+                    className={`px-3 py-1 text-sm transition-all duration-200 ${
                       videoStatsView === 'stats'
                         ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                         : 'text-gray-400 hover:text-cyan-300 hover:bg-dark-600'
@@ -1092,7 +1092,7 @@ export function HistoryPage() {
                   </button>
                   <button
                     onClick={() => setVideoStatsView('charts')}
-                    className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
+                    className={`px-3 py-1 text-sm transition-all duration-200 ${
                       videoStatsView === 'charts'
                         ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                         : 'text-gray-400 hover:text-cyan-300 hover:bg-dark-600'
@@ -1189,10 +1189,10 @@ export function HistoryPage() {
           ) : (
             <div className="space-y-4">
               {Array.from(videoWorkoutsByExercise.entries()).map(([exerciseName, exerciseWorkouts]) => (
-                <div key={exerciseName} className="bg-dark-800 rounded-lg">
+                <div key={exerciseName} className="bg-dark-800">
                   <button
                     onClick={() => toggleExercise(exerciseName)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-dark-700 transition-colors rounded-lg"
+                    className="w-full flex items-center justify-between p-4 hover:bg-dark-700 transition-colors"
                   >
                     <h3 className="text-white font-semibold flex items-center gap-2">
                       <Video className="w-5 h-5 text-cyan-400" />
@@ -1232,7 +1232,7 @@ export function HistoryPage() {
                             <div className="flex items-center gap-6">
                               <button
                                 onClick={() => handlePlayVideo(workout.videoUrl!, exerciseName)}
-                                className="flex items-center gap-1 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50"
+                                className="flex items-center gap-1 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50"
                               >
                                 <Play size={16} />
                                 <span className="text-sm">Play</span>
@@ -1287,12 +1287,12 @@ export function HistoryPage() {
               src={selectedVideoUrl}
               controls
               autoPlay
-              className="w-full aspect-video rounded-lg bg-black"
+              className="w-full aspect-video bg-black"
             />
             <div className="flex justify-end">
               <button
                 onClick={handleCloseVideo}
-                className="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white transition-colors"
               >
                 Close
               </button>

@@ -194,7 +194,7 @@ export function WorkoutHomePage() {
       <div className="px-6 mb-6">
         <button
           onClick={handleStartEmptyWorkout}
-          className="w-full bg-dark-800 hover:bg-dark-700 rounded-xl py-4 px-6 transition-all duration-200 transform hover:scale-[1.02] border border-dark-700"
+          className="w-full bg-dark-800 hover:bg-dark-700 py-4 px-6 transition-all duration-200 transform hover:scale-[1.02] border border-dark-700"
         >
           <div className="flex items-center gap-3">
             <Plus size={24} className="text-white" />
@@ -213,7 +213,7 @@ export function WorkoutHomePage() {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <button
             onClick={handleNewRoutine}
-            className="bg-dark-800 hover:bg-dark-700 rounded-xl py-8 transition-all duration-200 transform hover:scale-[1.02] border border-dark-700 flex flex-col items-center justify-center gap-3"
+            className="bg-dark-800 hover:bg-dark-700 py-8 transition-all duration-200 transform hover:scale-[1.02] border border-dark-700 flex flex-col items-center justify-center gap-3"
           >
             <ClipboardList size={32} className="text-white" />
             <span className="text-white font-medium">New Routine</span>
@@ -221,7 +221,7 @@ export function WorkoutHomePage() {
 
           <button
             onClick={handleExploreRoutines}
-            className="bg-dark-800 hover:bg-dark-700 rounded-xl py-8 transition-all duration-200 transform hover:scale-[1.02] border border-dark-700 flex flex-col items-center justify-center gap-3"
+            className="bg-dark-800 hover:bg-dark-700 py-8 transition-all duration-200 transform hover:scale-[1.02] border border-dark-700 flex flex-col items-center justify-center gap-3"
           >
             <Search size={32} className="text-white" />
             <span className="text-white font-medium">Explore</span>
@@ -255,7 +255,7 @@ export function WorkoutHomePage() {
               {routines.map((routine) => (
                 <div
                   key={routine.id}
-                  className="bg-dark-800 rounded-xl p-4 border border-dark-700 hover:border-cyan-700/40 transition-all duration-200 overflow-visible relative"
+                  className="bg-dark-800 p-4 border border-dark-700 hover:border-cyan-700/40 transition-all duration-200 overflow-visible relative"
                   style={{ zIndex: menuOpen === routine.id ? 50 : 1 }}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -275,14 +275,14 @@ export function WorkoutHomePage() {
                         e.stopPropagation()
                         setMenuOpen(menuOpen === routine.id ? null : routine.id)
                       }}
-                      className="text-gray-400 hover:text-cyan-400 transition-colors p-2 rounded-lg hover:bg-dark-700 relative"
+                      className="text-gray-400 hover:text-cyan-400 transition-colors p-2 hover:bg-dark-700 relative"
                     >
                       <MoreVertical size={20} />
                       
                       {/* Dropdown menu */}
                       {menuOpen === routine.id && (
                         <div 
-                          className="absolute right-0 top-full mt-1 bg-dark-900 border border-cyan-700/30 rounded-lg shadow-2xl py-1 min-w-[160px]"
+                          className="absolute right-0 top-full mt-1 bg-dark-900 border border-cyan-700/30 shadow-2xl py-1 min-w-[160px]"
                           style={{ zIndex: 9999 }}
                         >
                           <button
@@ -337,7 +337,7 @@ export function WorkoutHomePage() {
       {deleteConfirmation.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setDeleteConfirmation({show: false, routineId: '', routineName: ''})} />
-          <div className="relative bg-dark-900 rounded-xl w-full max-w-md p-6 border border-dark-700">
+          <div className="relative bg-dark-900 w-full max-w-md p-6 border border-dark-700">
             <h3 className="text-xl font-bold mb-2">Delete Routine</h3>
             <p className="text-gray-400 mb-6">
               Are you sure you want to delete <span className="text-white font-semibold">{deleteConfirmation.routineName}</span>? This action cannot be undone.
@@ -366,7 +366,7 @@ export function WorkoutHomePage() {
       {showRoutineDetail && selectedRoutine && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowRoutineDetail(false)} />
-          <div className="relative bg-dark-900 rounded-t-2xl w-full max-w-lg max-h-[80vh] overflow-hidden border-t border-dark-700 animate-slide-up">
+          <div className="relative bg-dark-900 w-full max-w-lg max-h-[80vh] overflow-hidden border-t border-dark-700 animate-slide-up">
             {/* Modal Header */}
             <div className="sticky top-0 bg-dark-900 border-b border-dark-700 px-6 py-4 z-10">
               <div className="flex items-start justify-between mb-2">
@@ -377,7 +377,7 @@ export function WorkoutHomePage() {
                       setShowRoutineDetail(false)
                       handleEditRoutine(selectedRoutine)
                     }}
-                    className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium transition-colors"
                   >
                     Edit Routine
                   </button>
@@ -419,7 +419,7 @@ export function WorkoutHomePage() {
                     <div key={exercise.exerciseId} className="space-y-3">
                       {/* Exercise Header */}
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
                           <span className="text-cyan-400 text-sm font-bold">
                             {exercise.exerciseName.charAt(0)}
                           </span>
@@ -438,12 +438,12 @@ export function WorkoutHomePage() {
                         {sets.map((set, index) => (
                           <div key={index} className="grid grid-cols-[50px_1fr_1fr] gap-2 items-center">
                             <span className="text-white text-lg">{index + 1}</span>
-                            <div className="bg-dark-800 rounded-lg py-2 px-3 text-center border border-dark-700">
+                            <div className="bg-dark-800 py-2 px-3 text-center border border-dark-700">
                               <span className="text-white">
                                 {set.weight || '-'}
                               </span>
                             </div>
-                            <div className="bg-dark-800 rounded-lg py-2 px-3 text-center border border-dark-700">
+                            <div className="bg-dark-800 py-2 px-3 text-center border border-dark-700">
                               <span className="text-white">
                                 {set.reps ?? '-'}
                               </span>

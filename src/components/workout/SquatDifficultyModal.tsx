@@ -54,7 +54,7 @@ export function SquatDifficultyModal({
             <button
               key={option.mode}
               onClick={() => onSelect(option.mode)}
-              className={`w-full p-4 rounded-lg border-2 ${option.color} bg-dark-800 text-left transition-all duration-200 hover:scale-[1.02]`}
+              className={`w-full p-4 border-2 ${option.color} bg-dark-800 text-left transition-all duration-200 hover:scale-[1.02]`}
             >
               <div className="flex items-start gap-3">
                 <span className="text-2xl">{option.icon}</span>

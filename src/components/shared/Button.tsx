@@ -20,10 +20,10 @@ export function Button({
   return (
     <button
       className={clsx(
-        'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95',
+        'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed',
         {
-          'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50': variant === 'primary',
-          'bg-dark-700 text-white hover:bg-dark-600 border border-cyan-700/40 hover:border-cyan-500/60':
+          'bg-cyan-500 text-black hover:bg-cyan-400 border border-cyan-500 hover:border-cyan-400': variant === 'primary',
+          'bg-dark-700 text-white hover:bg-dark-600 border border-dark-600 hover:border-cyan-500/60':
             variant === 'secondary',
           'bg-transparent text-gray-300 hover:text-cyan-300 hover:bg-dark-700':
             variant === 'ghost',

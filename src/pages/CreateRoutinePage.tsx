@@ -276,7 +276,7 @@ export function CreateRoutinePage() {
               }
             }}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-lg font-medium text-sm min-w-[70px] transition-all duration-200 ${
+            className={`px-4 py-2 font-medium text-sm min-w-[70px] transition-all duration-200 ${
               canSave && exercises.length > 0
                 ? 'bg-cyan-600 hover:bg-cyan-700 text-white' 
                 : 'bg-dark-700 text-gray-500 cursor-not-allowed'
@@ -304,7 +304,7 @@ export function CreateRoutinePage() {
       {/* Exercises List */}
       {exercises.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6">
-          <div className="w-24 h-24 rounded-full border-2 border-dark-700 flex items-center justify-center mb-6">
+          <div className="w-24 h-24 border-2 border-dark-700 flex items-center justify-center mb-6">
             <svg className="w-12 h-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
@@ -322,7 +322,7 @@ export function CreateRoutinePage() {
           {exercises.map((exerciseData, index) => (
             <div key={exerciseData.exercise.id} className="bg-dark-900 px-4 py-4">{/* Exercise Header */}
               <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
                   <span className="text-cyan-400 text-lg font-bold">{exerciseData.exercise.name.charAt(0)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -349,7 +349,7 @@ export function CreateRoutinePage() {
                         className="fixed inset-0 z-10" 
                         onClick={() => setExerciseMenuOpen(null)}
                       />
-                      <div className="absolute right-0 top-8 z-20 bg-dark-900 border border-dark-700 rounded-lg shadow-xl py-2 min-w-[140px]">
+                      <div className="absolute right-0 top-8 z-20 bg-dark-900 border border-dark-700 shadow-xl py-2 min-w-[140px]">
                         <button
                           onClick={() => {
                             handleRemoveExercise(index)
@@ -399,12 +399,12 @@ export function CreateRoutinePage() {
                             : ex
                         ))
                       }}
-                      className="w-full bg-dark-800 text-white text-lg text-center rounded-lg py-2 border border-dark-700 focus:border-cyan-600 focus:outline-none"
+                      className="w-full bg-dark-800 text-white text-lg text-center py-2 border border-dark-700 focus:border-cyan-600 focus:outline-none"
                     />
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleDecrementReps(index, setIndex)}
-                        className="w-8 h-8 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-700/50 hover:border-cyan-500 text-cyan-400 flex items-center justify-center transition-all duration-200 flex-shrink-0"
+                        className="w-8 h-8 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-700/50 hover:border-cyan-500 text-cyan-400 flex items-center justify-center transition-all duration-200 flex-shrink-0"
                       >
                         <Minus size={14} />
                       </button>
@@ -418,11 +418,11 @@ export function CreateRoutinePage() {
                           handleUpdateSetReps(index, setIndex, val ? parseInt(val) : null)
                         }}
                         placeholder="-"
-                        className="w-full min-w-0 bg-dark-800 text-white text-lg text-center rounded-lg py-2 border border-dark-700 focus:border-cyan-600 focus:outline-none"
+                        className="w-full min-w-0 bg-dark-800 text-white text-lg text-center py-2 border border-dark-700 focus:border-cyan-600 focus:outline-none"
                       />
                       <button
                         onClick={() => handleIncrementReps(index, setIndex)}
-                        className="w-8 h-8 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-700/50 hover:border-cyan-500 text-cyan-400 flex items-center justify-center transition-all duration-200 flex-shrink-0"
+                        className="w-8 h-8 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-700/50 hover:border-cyan-500 text-cyan-400 flex items-center justify-center transition-all duration-200 flex-shrink-0"
                       >
                         <Plus size={14} />
                       </button>
@@ -442,7 +442,7 @@ export function CreateRoutinePage() {
               {/* Add Set Button */}
               <button
                 onClick={() => handleAddSet(index)}
-                className="w-full mt-3 py-3 bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 hover:from-cyan-600/30 hover:to-cyan-500/30 text-cyan-400 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-cyan-700/40 hover:border-cyan-600/60 transform hover:scale-[1.02]"
+                className="w-full mt-3 py-3 bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 hover:from-cyan-600/30 hover:to-cyan-500/30 text-cyan-400 transition-all duration-200 flex items-center justify-center gap-2 border border-cyan-700/40 hover:border-cyan-600/60 transform hover:scale-[1.02]"
               >
                 <Plus size={18} />
                 <span className="font-medium">Add Set</span>
@@ -464,7 +464,7 @@ export function CreateRoutinePage() {
       {showCancelConfirmation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowCancelConfirmation(false)} />
-          <div className="relative bg-dark-900 rounded-xl w-full max-w-md p-6 border border-dark-700">
+          <div className="relative bg-dark-900 w-full max-w-md p-6 border border-dark-700">
             <h3 className="text-xl font-bold mb-2">Discard Changes?</h3>
             <p className="text-gray-400 mb-6">
               You have exercises added to this routine. Are you sure you want to cancel?
@@ -493,7 +493,7 @@ export function CreateRoutinePage() {
       {showSaveError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowSaveError(false)} />
-          <div className="relative bg-dark-900 rounded-xl w-full max-w-md p-6 border border-dark-700 text-center">
+          <div className="relative bg-dark-900 w-full max-w-md p-6 border border-dark-700 text-center">
             <h3 className="text-xl font-bold mb-2 text-red-400">Routine Name Required</h3>
             <p className="text-gray-400 mb-6">
               Please enter a name for your routine before saving.
@@ -512,7 +512,7 @@ export function CreateRoutinePage() {
       {showNoExercisesError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowNoExercisesError(false)} />
-          <div className="relative bg-dark-900 rounded-xl w-full max-w-md p-6 border border-dark-700 text-center">
+          <div className="relative bg-dark-900 w-full max-w-md p-6 border border-dark-700 text-center">
             <h3 className="text-xl font-bold mb-2 text-red-400">No Exercises Added</h3>
             <p className="text-gray-400 mb-6">
               Please add at least one exercise to your routine before saving.

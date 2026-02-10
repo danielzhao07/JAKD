@@ -27,7 +27,7 @@ export function FormFeedbackPanel({ feedback, formScore }: FormFeedbackPanelProp
   }
 
   return (
-    <div className="bg-dark-800 rounded-lg border border-gray-600 p-4">
+    <div className="bg-dark-800 border border-gray-600 p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-gray-300">Form Quality</span>
         <span className={`text-lg font-bold ${getScoreColor(formScore)}`}>

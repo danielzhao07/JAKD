@@ -85,7 +85,7 @@ function RestTimerPicker({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-dark-900 rounded-t-2xl w-full max-w-lg pb-8 animate-slide-up">
+      <div className="relative bg-dark-900 w-full max-w-lg pb-8 animate-slide-up">
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 bg-dark-600 rounded-full" />
         </div>
@@ -97,7 +97,7 @@ function RestTimerPicker({
           </div>
           <button
             onClick={() => toggleRestTimerSound(exercise.exerciseId)}
-            className="p-2 rounded-lg hover:bg-dark-700 transition-colors"
+            className="p-2 hover:bg-dark-700 transition-colors"
           >
             {exercise.soundEnabled ? (
               <Volume2 size={20} className="text-cyan-400" />
@@ -110,7 +110,7 @@ function RestTimerPicker({
         {/* Timer Picker */}
         <div className="relative h-[220px] overflow-hidden">
           {/* Highlight band */}
-          <div className="absolute top-1/2 left-4 right-4 h-[44px] -translate-y-1/2 bg-dark-700 rounded-lg pointer-events-none border border-dark-600" />
+          <div className="absolute top-1/2 left-4 right-4 h-[44px] -translate-y-1/2 bg-dark-700 pointer-events-none border border-dark-600" />
           
           {/* Scrollable options */}
           <div
@@ -157,7 +157,7 @@ function ActiveRestTimerDisplay({
   onCancel: () => void 
 }) {
   return (
-    <div className="fixed bottom-24 left-4 right-4 bg-cyan-900/90 backdrop-blur-sm rounded-xl p-4 border border-cyan-700/50 z-40">
+    <div className="fixed bottom-24 left-4 right-4 bg-cyan-900/90 backdrop-blur-sm p-4 border border-cyan-700/50 z-40">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Clock size={24} className="text-cyan-400" />
@@ -168,7 +168,7 @@ function ActiveRestTimerDisplay({
         </div>
         <button
           onClick={onCancel}
-          className="px-4 py-2 bg-dark-800 hover:bg-dark-700 rounded-lg text-white transition-colors"
+          className="px-4 py-2 bg-dark-800 hover:bg-dark-700 text-white transition-colors"
         >
           Skip
         </button>
@@ -200,11 +200,11 @@ function AddExerciseModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-dark-900 rounded-xl w-full max-w-md max-h-[80vh] flex flex-col border border-dark-700">
+      <div className="relative bg-dark-900 w-full max-w-md max-h-[80vh] flex flex-col border border-dark-700">
         <div className="p-4 border-b border-dark-700">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white">Add Exercise</h3>
-            <button onClick={onClose} className="p-1 hover:bg-dark-700 rounded-lg transition-colors">
+            <button onClick={onClose} className="p-1 hover:bg-dark-700 transition-colors">
               <X size={20} className="text-gray-400" />
             </button>
           </div>
@@ -215,7 +215,7 @@ function AddExerciseModal({
               placeholder="Search exercises..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-dark-800 border border-dark-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-700"
+              className="w-full bg-dark-800 border border-dark-600 py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-700"
             />
           </div>
         </div>
@@ -227,9 +227,9 @@ function AddExerciseModal({
                 onAddExercise(ex)
                 onClose()
               }}
-              className="w-full flex items-center gap-3 p-3 bg-dark-800 hover:bg-dark-700 rounded-lg transition-colors text-left"
+              className="w-full flex items-center gap-3 p-3 bg-dark-800 hover:bg-dark-700 transition-colors text-left"
             >
-              <div className="w-10 h-10 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
                 <span className="text-cyan-400 text-sm font-bold">{ex.name.charAt(0)}</span>
               </div>
               <div>
@@ -267,7 +267,7 @@ function UnfinishedSetsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative bg-white rounded-2xl w-full max-w-sm p-6 text-center">
+      <div className="relative bg-white w-full max-w-sm p-6 text-center">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           You have {unfinishedCount} unfinished set{unfinishedCount > 1 ? 's' : ''}
         </h3>
@@ -278,28 +278,28 @@ function UnfinishedSetsModal({
         <div className="space-y-3">
           <button
             onClick={onComplete}
-            className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 rounded-xl text-white font-medium transition-colors"
+            className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-medium transition-colors"
           >
             Complete Unfinished Sets
           </button>
           {hasNoCompletedSets ? (
             <button
               onClick={onCancelWorkout}
-              className="w-full py-3 bg-red-100 hover:bg-red-200 rounded-xl text-red-600 font-medium transition-colors"
+              className="w-full py-3 bg-red-100 hover:bg-red-200 text-red-600 font-medium transition-colors"
             >
               Cancel Workout
             </button>
           ) : (
             <button
               onClick={onDiscard}
-              className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 font-medium transition-colors"
+              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
             >
               Discard Unfinished Sets
             </button>
           )}
           <button
             onClick={onCancel}
-            className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-500 font-medium transition-colors"
+            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-500 font-medium transition-colors"
           >
             Cancel
           </button>
@@ -320,8 +320,8 @@ function InvalidWorkoutModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative bg-white rounded-2xl w-full max-w-sm p-6 text-center">
-        <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+      <div className="relative bg-white w-full max-w-sm p-6 text-center">
+        <div className="w-12 h-12 mx-auto mb-4 bg-red-100 flex items-center justify-center">
           <X size={24} className="text-red-500" />
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -333,7 +333,7 @@ function InvalidWorkoutModal({
         
         <button
           onClick={onCancel}
-          className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 rounded-xl text-white font-medium transition-colors"
+          className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-medium transition-colors"
         >
           Got It
         </button>
@@ -421,19 +421,19 @@ function ExerciseCard({
   }
   
   return (
-    <div className="bg-dark-900/80 rounded-xl border border-dark-700/50 overflow-hidden">
+    <div className="bg-dark-900/80 border border-dark-700/50 overflow-hidden">
       {/* Exercise Header */}
       <div className="p-4 border-b border-dark-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
               <span className="text-cyan-400 text-sm font-bold">
                 {exercise.exerciseName.charAt(0)}
               </span>
             </div>
             <h3 className="text-cyan-400 font-medium">{exercise.exerciseName}</h3>
           </div>
-          <button className="p-2 rounded-lg hover:bg-dark-700 transition-colors">
+          <button className="p-2 hover:bg-dark-700 transition-colors">
             <MoreVertical size={20} className="text-gray-400" />
           </button>
         </div>
@@ -493,7 +493,7 @@ function ExerciseCard({
             return (
               <div 
                 key={index}
-                className={`grid ${getGridCols()} gap-2 items-center rounded-lg px-2 py-2 transition-colors ${rowBgClass}`}
+                className={`grid ${getGridCols()} gap-2 items-center px-2 py-2 transition-colors ${rowBgClass}`}
               >
                 {/* Set Number */}
                 <span className={`text-center font-semibold ${
@@ -547,7 +547,7 @@ function ExerciseCard({
                 {isDetectable && (
                   <button
                     onClick={() => onVideoTrack(index)}
-                    className={`flex items-center justify-center p-1.5 rounded-lg transition-colors ${
+                    className={`flex items-center justify-center p-1.5 transition-colors ${
                       isCompleted ? 'opacity-50' : 'hover:bg-dark-600'
                     }`}
                     disabled={isCompleted}
@@ -560,7 +560,7 @@ function ExerciseCard({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleDecrementReps(index)}
-                    className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${
+                    className={`w-6 h-6 flex items-center justify-center transition-colors ${
                       showRedReps
                         ? 'border border-red-500 text-red-400'
                         : 'border border-cyan-700/50 text-cyan-400 hover:bg-cyan-900/30'
@@ -569,7 +569,7 @@ function ExerciseCard({
                     <Minus size={12} />
                   </button>
                   <div 
-                    className={`flex-1 rounded-lg py-1.5 text-center border transition-colors cursor-pointer ${
+                    className={`flex-1 py-1.5 text-center border transition-colors cursor-pointer ${
                       showRedReps
                         ? 'bg-red-900/30 border-red-500'
                         : isCompleted 
@@ -594,7 +594,7 @@ function ExerciseCard({
                   </div>
                   <button
                     onClick={() => handleIncrementReps(index)}
-                    className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${
+                    className={`w-6 h-6 flex items-center justify-center transition-colors ${
                       showRedReps
                         ? 'border border-red-500 text-red-400'
                         : 'border border-cyan-700/50 text-cyan-400 hover:bg-cyan-900/30'
@@ -607,7 +607,7 @@ function ExerciseCard({
                 {/* Checkmark Button */}
                 <button
                   onClick={() => handleToggleCompletion(index)}
-                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all mx-auto ${
+                  className={`w-7 h-7 border-2 flex items-center justify-center transition-all mx-auto ${
                     isCompleted 
                       ? 'bg-green-500 border-green-500 text-white' 
                       : 'border-gray-500 hover:border-cyan-500'
@@ -623,7 +623,7 @@ function ExerciseCard({
         {/* Add Set Button */}
         <button
           onClick={() => addSet(exercise.exerciseId)}
-          className="w-full mt-3 py-2.5 bg-dark-700/50 hover:bg-dark-700 rounded-lg border border-dark-600/50 text-gray-300 font-medium flex items-center justify-center gap-2 transition-colors text-sm"
+          className="w-full mt-3 py-2.5 bg-dark-700/50 hover:bg-dark-700 border border-dark-600/50 text-gray-300 font-medium flex items-center justify-center gap-2 transition-colors text-sm"
         >
           <Plus size={16} />
           Add Set
@@ -891,7 +891,7 @@ export function ActiveWorkoutPage() {
         {exercises.length === 0 ? (
           // Empty workout state
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-dark-800 flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-dark-800 flex items-center justify-center mb-4">
               <Plus size={32} className="text-cyan-400" />
             </div>
             <h3 className="text-white text-lg font-semibold mb-2">Get started!</h3>
@@ -901,7 +901,7 @@ export function ActiveWorkoutPage() {
             <div className="flex flex-col items-center gap-3">
               <button
                 onClick={() => setShowAddExerciseModal(true)}
-                className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-xl text-white font-medium flex items-center gap-2 transition-colors"
+                className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-medium flex items-center gap-2 transition-colors"
               >
                 <Plus size={20} />
                 Add Exercise
@@ -933,7 +933,7 @@ export function ActiveWorkoutPage() {
             {/* Add Exercise Button */}
             <button
               onClick={() => setShowAddExerciseModal(true)}
-              className="w-full py-4 bg-dark-800/50 hover:bg-dark-800 rounded-xl border border-dashed border-dark-600 text-cyan-400 font-medium flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-4 bg-dark-800/50 hover:bg-dark-800 border border-dashed border-dark-600 text-cyan-400 font-medium flex items-center justify-center gap-2 transition-colors"
             >
               <Plus size={20} />
               Add Exercise

@@ -66,12 +66,12 @@ export function WorkoutInProgressBar() {
     <>
       {/* Workout in progress bar */}
       <div className="fixed bottom-16 left-0 right-0 z-40 md:bottom-0">
-        <div className="bg-dark-800 mx-4 mb-2 rounded-2xl shadow-lg border border-dark-600 overflow-hidden">
+        <div className="bg-dark-800 mx-4 mb-2 shadow-lg border border-dark-600 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3">
             {/* Left: Expand button */}
             <button
               onClick={handleNavigateToWorkout}
-              className="w-12 h-12 rounded-full bg-dark-700 border border-dark-500 flex items-center justify-center hover:bg-dark-600 transition-colors"
+              className="w-12 h-12 bg-dark-700 border border-dark-500 flex items-center justify-center hover:bg-dark-600 transition-colors"
             >
               <ChevronUp size={24} className="text-cyan-400" />
             </button>
@@ -89,7 +89,7 @@ export function WorkoutInProgressBar() {
             {/* Right: Discard button */}
             <button
               onClick={handleDiscard}
-              className="w-12 h-12 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+              className="w-12 h-12 bg-red-500/20 border border-red-500/40 flex items-center justify-center hover:bg-red-500/30 transition-colors"
             >
               <Trash2 size={22} className="text-red-400" />
             </button>
@@ -101,20 +101,20 @@ export function WorkoutInProgressBar() {
       {showDiscardConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowDiscardConfirm(false)} />
-          <div className="relative bg-dark-800 rounded-2xl w-full max-w-sm p-6 text-center border border-dark-600">
+          <div className="relative bg-dark-800 w-full max-w-sm p-6 text-center border border-dark-600">
             <p className="text-white text-lg mb-6">
               Are you sure you want to discard this workout?
             </p>
             <div className="space-y-3">
               <button
                 onClick={confirmDiscard}
-                className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 rounded-xl text-red-400 font-medium transition-colors border border-red-500/40"
+                className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium transition-colors border border-red-500/40"
               >
                 Discard Workout
               </button>
               <button
                 onClick={() => setShowDiscardConfirm(false)}
-                className="w-full py-3 bg-dark-700 hover:bg-dark-600 rounded-xl text-white font-medium transition-colors border border-dark-500"
+                className="w-full py-3 bg-dark-700 hover:bg-dark-600 text-white font-medium transition-colors border border-dark-500"
               >
                 Cancel
               </button>

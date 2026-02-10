@@ -47,7 +47,7 @@ export function VideoFeed({ stream, onVideoReady, showOverlay = true }: VideoFee
   }
 
   return (
-    <div className="relative w-full aspect-video bg-dark-900 rounded-lg overflow-hidden flex items-center justify-center">
+    <div className="relative w-full aspect-video bg-dark-900 overflow-hidden flex items-center justify-center">
       <video
         ref={videoRef}
         autoPlay
@@ -67,13 +67,13 @@ export function VideoFeed({ stream, onVideoReady, showOverlay = true }: VideoFee
       {/* Debug overlay - left side */}
       <div className="absolute top-4 left-4 space-y-2 z-20">
         {/* Phase indicator */}
-        <div className="flex items-center gap-2 bg-black/80 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 bg-black/80 px-3 py-2">
           <div className={`w-3 h-3 rounded-full ${getPhaseColor(currentRepPhase)} animate-pulse`} />
           <span className="text-white text-sm font-mono uppercase">{currentRepPhase}</span>
         </div>
         
         {/* Elbow angle display */}
-        <div className="bg-black/80 px-3 py-2 rounded-lg">
+        <div className="bg-black/80 px-3 py-2">
           <div className="text-xs text-gray-400 mb-1">Elbow Angle</div>
           <div className="text-2xl font-bold text-white font-mono">
             {debugElbowAngle.toFixed(0)}°
@@ -93,7 +93,7 @@ export function VideoFeed({ stream, onVideoReady, showOverlay = true }: VideoFee
         </div>
 
         {/* Detection status */}
-        <div className="bg-black/80 px-3 py-2 rounded-lg text-xs">
+        <div className="bg-black/80 px-3 py-2 text-xs">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${debugPoseDetected ? 'bg-cyan-500' : 'bg-red-500'}`} />
             <span className="text-gray-300">
@@ -105,12 +105,12 @@ export function VideoFeed({ stream, onVideoReady, showOverlay = true }: VideoFee
       </div>
       
       {/* Rep count overlay - right side */}
-      <div className="absolute top-4 right-4 bg-cyan-500 text-black font-bold text-3xl px-5 py-3 rounded-lg shadow-lg shadow-cyan-500/50 z-20 animate-pulse">
+      <div className="absolute top-4 right-4 bg-cyan-500 text-black font-bold text-3xl px-5 py-3 shadow-lg shadow-cyan-500/50 z-20 animate-pulse">
         {repCount}
       </div>
 
       {/* Camera position tip */}
-      <div className="absolute bottom-4 left-4 right-4 bg-black/70 px-4 py-2 rounded-lg z-20">
+      <div className="absolute bottom-4 left-4 right-4 bg-black/70 px-4 py-2 z-20">
         <p className="text-xs text-gray-300 text-center">
           Position camera to your <strong>side</strong> for best detection. Your full arm (shoulder→elbow→wrist) should be visible.
         </p>

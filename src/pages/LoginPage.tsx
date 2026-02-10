@@ -45,14 +45,14 @@ export function LoginPage() {
 
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white italic mb-1">Welcome back</h1>
+            <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
             <p className="text-gray-400 text-sm">Login to continue tracking your workouts</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-sm text-red-400">
+              <div className="bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-400">
                 {error}
               </div>
             )}
@@ -70,7 +70,7 @@ export function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-dark-800/50 border border-dark-600 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                  className="w-full bg-dark-800/50 border border-dark-600 pl-10 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
@@ -95,7 +95,7 @@ export function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full bg-dark-800/50 border border-dark-600 rounded-lg pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                  className="w-full bg-dark-800/50 border border-dark-600 pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
                   placeholder="Enter your password"
                 />
                 <button
@@ -113,7 +113,7 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setRememberMe(!rememberMe)}
-                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                className={`w-4 h-4 border flex items-center justify-center transition-colors ${
                   rememberMe 
                     ? 'bg-cyan-500 border-cyan-500' 
                     : 'border-gray-600 hover:border-gray-500'
@@ -132,7 +132,7 @@ export function LoginPage() {
             <Button
               type="submit"
               isLoading={isLoading}
-              className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-semibold py-2.5 rounded-lg transition-colors text-sm"
+              className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-semibold py-2.5 transition-colors text-sm"
               size="lg"
             >
               Login →
@@ -150,7 +150,7 @@ export function LoginPage() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-2 bg-dark-800/50 border border-dark-600 rounded-lg py-2.5 text-sm text-white font-medium hover:bg-dark-700 hover:border-dark-500 transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-dark-800/50 border border-dark-600 py-2.5 text-sm text-white font-medium hover:bg-dark-700 hover:border-cyan-500/40 transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -198,24 +198,23 @@ export function LoginPage() {
       </div>
 
       {/* Right side - Decorative */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-dark-900 to-dark-800 relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 items-center justify-center bg-dark-900 relative overflow-hidden border-l border-dark-700">
         {/* Background decorations */}
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] h-[350px] rounded-full bg-cyan-500/5 blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] rounded-full bg-cyan-500/10 blur-2xl" />
         </div>
 
         {/* Content */}
         <div className="relative text-center px-8">
           {/* Logo */}
           <div className="relative mx-auto w-24 h-24 mb-6">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 opacity-20 blur-xl" />
+            <div className="absolute inset-0 rounded-full bg-cyan-500/10 blur-xl" />
             <div className="relative w-full h-full rounded-full border border-cyan-500/30 flex items-center justify-center">
-              <img 
-                src="/jakd-logo.png" 
-                alt="JAKD" 
-                className="h-12 drop-shadow-[0_0_15px_#06b6d4aa]" 
-                style={{ filter: 'invert(1) brightness(2)' }} 
+              <img
+                src="/jakd-logo.png"
+                alt="JAKD"
+                className="h-12 drop-shadow-[0_0_15px_#06b6d4aa]"
+                style={{ filter: 'invert(1) brightness(2)' }}
               />
             </div>
           </div>

@@ -208,7 +208,7 @@ export function LineChart({ data, color, maxValue, height = 240, className }: Li
   }, [data, color, maxValue, height])
 
   return (
-    <div ref={containerRef} className={['w-full rounded-xl bg-dark-900 border border-dark-700 shadow-lg p-3', className].filter(Boolean).join(' ')} style={{ minHeight: height }}>
+    <div ref={containerRef} className={['w-full bg-dark-900 border border-dark-700 shadow-lg p-3', className].filter(Boolean).join(' ')} style={{ minHeight: height }}>
       <svg ref={svgRef} className="w-full h-full" />
     </div>
   )

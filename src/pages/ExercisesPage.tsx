@@ -396,7 +396,7 @@ function FilterModal({
       />
       
       {/* Bottom Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 bg-dark-800 rounded-t-2xl z-50 max-h-[70vh] flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 bg-dark-800 z-50 max-h-[70vh] flex flex-col">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 bg-gray-600 rounded-full" />
@@ -417,7 +417,7 @@ function FilterModal({
               className="w-full flex items-center gap-4 px-5 py-3 hover:bg-dark-700 transition-colors border-t border-dark-700"
             >
               {/* Icon */}
-              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-14 h-14 bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {renderIcon(option)}
               </div>
               
@@ -526,7 +526,7 @@ function ExerciseDetailModal({
                   </div>
                 ) : null}
                 
-                <div className="bg-dark-800 rounded-xl p-6 flex flex-col items-center justify-center min-h-[140px]">
+                <div className="bg-dark-800 p-6 flex flex-col items-center justify-center min-h-[140px]">
                   {exerciseWorkouts.length > 0 ? (
                     <div className="w-full h-24 flex items-end justify-center gap-2">
                       {exerciseWorkouts.slice(0, 10).reverse().map((w, i) => (
@@ -549,7 +549,7 @@ function ExerciseDetailModal({
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => setChartMode('set')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
                       chartMode === 'set' 
                         ? 'bg-blue-600 text-white' 
                         : 'bg-dark-700 text-gray-400'
@@ -663,7 +663,7 @@ function ExerciseDetailModal({
               })
             ) : (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 rounded-full border-2 border-gray-600 flex items-center justify-center mb-4">
+                <div className="w-16 h-16 border-2 border-gray-600 flex items-center justify-center mb-4">
                   <Clock className="w-8 h-8 text-gray-600" />
                 </div>
                 <h3 className="text-white text-lg font-semibold mb-2">No exercise history</h3>
@@ -712,7 +712,7 @@ function ExerciseListItem({ exercise, onTrendClick }: { exercise: LibraryExercis
       {/* Trend icon - Cyan with hover effect */}
       <button 
         onClick={onTrendClick}
-        className="w-10 h-10 rounded-full border border-cyan-600 flex items-center justify-center transition-all duration-200 hover:bg-cyan-600 hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/50 group transform hover:scale-110"
+        className="w-10 h-10 border border-cyan-600 flex items-center justify-center transition-all duration-200 hover:bg-cyan-600 hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/50 group transform hover:scale-110"
       >
         <TrendingUp className="w-5 h-5 text-cyan-400 group-hover:text-white transition-colors" />
       </button>
@@ -824,7 +824,7 @@ export function ExercisesPage() {
             placeholder="Search exercise"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-dark-700 text-white placeholder-gray-500 rounded-xl py-3 pl-12 pr-4 text-[16px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full bg-dark-700 text-white placeholder-gray-500 py-3 pl-12 pr-4 text-[16px] focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
 
@@ -832,7 +832,7 @@ export function ExercisesPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setEquipmentModalOpen(true)}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-[13px] font-medium transition-colors ${
               selectedEquipment !== 'All Equipment' 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-dark-700 text-gray-300'
@@ -845,7 +845,7 @@ export function ExercisesPage() {
                   e.stopPropagation()
                   setSelectedEquipment('All Equipment')
                 }}
-                className="ml-0.5 hover:bg-blue-700 rounded-full p-0.5"
+                className="ml-0.5 hover:bg-blue-700 p-0.5"
               >
                 <X size={14} />
               </button>
@@ -854,7 +854,7 @@ export function ExercisesPage() {
           
           <button
             onClick={() => setMuscleModalOpen(true)}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-[13px] font-medium transition-colors ${
               selectedMuscle !== 'All Muscles' 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-dark-700 text-gray-300'
@@ -867,7 +867,7 @@ export function ExercisesPage() {
                   e.stopPropagation()
                   setSelectedMuscle('All Muscles')
                 }}
-                className="ml-0.5 hover:bg-blue-700 rounded-full p-0.5"
+                className="ml-0.5 hover:bg-blue-700 p-0.5"
               >
                 <X size={14} />
               </button>
@@ -876,7 +876,7 @@ export function ExercisesPage() {
           
           <button
             onClick={() => setAiDetectionEnabled(!aiDetectionEnabled)}
-            className={`flex-1 flex items-center justify-center py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
+            className={`flex-1 flex items-center justify-center py-2.5 text-[13px] font-medium transition-colors ${
               aiDetectionEnabled 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-dark-700 text-gray-300'

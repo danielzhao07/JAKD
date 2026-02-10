@@ -130,7 +130,7 @@ export function CreateExercisePage() {
       <div className="divide-y divide-dark-700">
         {/* Exercise Image */}
         <div className="px-4 py-8 flex flex-col items-center">
-          <button className="w-32 h-32 rounded-full border-2 border-dark-700 flex items-center justify-center mb-4 hover:border-cyan-500 transition-colors">
+          <button className="w-32 h-32 border-2 border-dark-700 flex items-center justify-center mb-4 hover:border-cyan-500 transition-colors">
             <Camera size={32} className="text-gray-600" />
           </button>
           <button className="text-cyan-400 text-sm">Add Asset</button>

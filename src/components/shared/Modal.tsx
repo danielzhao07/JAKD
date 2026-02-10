@@ -42,7 +42,7 @@ export function Modal({ isOpen, onClose, children, title, className }: ModalProp
       />
       <div
         className={clsx(
-          'relative bg-dark-800 rounded-lg border border-cyan-700/40 p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl shadow-cyan-500/10 animate-in slide-in-from-bottom-4 duration-300',
+          'relative bg-dark-800 border border-cyan-700/40 p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl shadow-cyan-500/10 animate-in slide-in-from-bottom-4 duration-300',
           className
         )}
       >

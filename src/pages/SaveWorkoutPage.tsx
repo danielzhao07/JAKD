@@ -42,20 +42,20 @@ function DiscardConfirmationModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative bg-dark-900 rounded-xl w-full max-w-md p-6 border border-dark-700">
+      <div className="relative bg-dark-900 w-full max-w-md p-6 border border-dark-700">
         <p className="text-white text-center text-lg mb-6">
           Are you sure you want to discard this workout?
         </p>
         <div className="space-y-3">
           <button
             onClick={onDiscard}
-            className="w-full py-3 bg-dark-800 hover:bg-dark-700 rounded-xl text-red-400 font-medium transition-colors border border-dark-600"
+            className="w-full py-3 bg-dark-800 hover:bg-dark-700 text-red-400 font-medium transition-colors border border-dark-600"
           >
             Discard Workout
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-3 bg-dark-800 hover:bg-dark-700 rounded-xl text-white font-medium transition-colors border border-dark-600"
+            className="w-full py-3 bg-dark-800 hover:bg-dark-700 text-white font-medium transition-colors border border-dark-600"
           >
             Cancel
           </button>
@@ -80,13 +80,13 @@ function UpdateRoutineModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative bg-dark-900 rounded-t-2xl w-full max-w-lg pb-8 animate-slide-up">
+      <div className="relative bg-dark-900 w-full max-w-lg pb-8 animate-slide-up">
         <div className="flex justify-center pt-3 pb-4">
           <div className="w-10 h-1 bg-dark-600 rounded-full" />
         </div>
         
         <div className="px-6 text-center">
-          <div className="w-12 h-12 mx-auto mb-4 bg-dark-800 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 mx-auto mb-4 bg-dark-800 flex items-center justify-center">
             <AlertTriangle size={24} className="text-gray-400" />
           </div>
           
@@ -121,7 +121,7 @@ function DeleteVideoModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
-      <div className="relative bg-dark-800 rounded-2xl w-full max-w-sm p-6 text-center border border-dark-600">
+      <div className="relative bg-dark-800 w-full max-w-sm p-6 text-center border border-dark-600">
         <h3 className="text-xl font-semibold text-white mb-2">
           Delete this video?
         </h3>
@@ -132,13 +132,13 @@ function DeleteVideoModal({
         <div className="space-y-3">
           <button
             onClick={onDelete}
-            className="w-full py-3 bg-red-500 hover:bg-red-600 rounded-xl text-white font-medium transition-colors"
+            className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
           >
             Delete Video
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-3 bg-dark-700 hover:bg-dark-600 rounded-xl text-white font-medium transition-colors border border-dark-500"
+            className="w-full py-3 bg-dark-700 hover:bg-dark-600 text-white font-medium transition-colors border border-dark-500"
           >
             Cancel
           </button>
@@ -457,11 +457,11 @@ export function SaveWorkoutPage() {
               <img 
                 src={photoUrl} 
                 alt="Workout" 
-                className="w-full h-48 object-cover rounded-xl border border-dark-600"
+                className="w-full h-48 object-cover border border-dark-600"
               />
               <button
                 onClick={handleRemovePhoto}
-                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full"
+                className="absolute top-2 right-2 p-1 bg-black/50"
               >
                 <X size={16} className="text-white" />
               </button>
@@ -469,7 +469,7 @@ export function SaveWorkoutPage() {
           ) : (
             <button
               onClick={handlePhotoUpload}
-              className="w-full py-8 border-2 border-dashed border-dark-600 rounded-xl flex items-center justify-center gap-3 text-gray-500 hover:border-cyan-700/50 hover:text-gray-400 transition-colors"
+              className="w-full py-8 border-2 border-dashed border-dark-600 flex items-center justify-center gap-3 text-gray-500 hover:border-cyan-700/50 hover:text-gray-400 transition-colors"
             >
               <Image size={24} />
               <span>Add a photo / video</span>
@@ -483,7 +483,7 @@ export function SaveWorkoutPage() {
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">Saved Videos ({currentVideoIndex + 1} of {savedVideos.length})</p>
             <div className="relative">
               {/* Video Card */}
-              <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
+              <div className="bg-dark-800 border border-dark-700 overflow-hidden">
                 <div className="relative">
                   <video
                     key={savedVideos[currentVideoIndex]?.id}
@@ -493,7 +493,7 @@ export function SaveWorkoutPage() {
                   />
                   <button
                     onClick={() => handleDeleteVideoClick(savedVideos[currentVideoIndex]?.id)}
-                    className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-600 rounded-full transition-colors"
+                    className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-600 transition-colors"
                   >
                     <Trash2 size={16} className="text-white" />
                   </button>
@@ -513,7 +513,7 @@ export function SaveWorkoutPage() {
                   {/* Left Arrow */}
                   <button
                     onClick={() => setCurrentVideoIndex(prev => prev > 0 ? prev - 1 : savedVideos.length - 1)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-900/50 hover:border-cyan-400 transition-colors"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/70 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-900/50 hover:border-cyan-400 transition-colors"
                   >
                     <ChevronLeft size={24} />
                   </button>
@@ -521,7 +521,7 @@ export function SaveWorkoutPage() {
                   {/* Right Arrow */}
                   <button
                     onClick={() => setCurrentVideoIndex(prev => prev < savedVideos.length - 1 ? prev + 1 : 0)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-900/50 hover:border-cyan-400 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/70 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-900/50 hover:border-cyan-400 transition-colors"
                   >
                     <ChevronRight size={24} />
                   </button>
@@ -551,7 +551,7 @@ export function SaveWorkoutPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="How did your workout go? Leave some notes here..."
-            className="w-full bg-dark-800/50 border border-dark-600 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:border-cyan-500/50"
+            className="w-full bg-dark-800/50 border border-dark-600 p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:border-cyan-500/50"
             rows={3}
           />
         </div>

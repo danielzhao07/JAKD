@@ -113,7 +113,7 @@ export function AddExercisesToRoutinePage() {
               placeholder="Search exercises..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full bg-dark-800 border border-dark-700 pl-10 pr-10 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
             {searchQuery && (
               <button
@@ -147,7 +147,7 @@ export function AddExercisesToRoutinePage() {
               }`}
             >
               {/* Exercise Image */}
-              <div className="w-12 h-12 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
                 <span className="text-cyan-400 text-lg font-bold">{exercise.name.charAt(0)}</span>
               </div>
 
@@ -159,7 +159,7 @@ export function AddExercisesToRoutinePage() {
 
               {/* Selection Indicator */}
               {selected && !alreadyInRoutine && (
-                <div className="w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 bg-cyan-500 flex items-center justify-center flex-shrink-0">
                   <Check size={16} className="text-black" />
                 </div>
               )}

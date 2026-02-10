@@ -238,7 +238,7 @@ export function WorkoutActiveView({ onEnd }: WorkoutActiveViewProps) {
             {currentExercise?.name || 'Workout'}
           </h1>
           {squatDifficultyBadge && (
-            <span className={`px-2 py-0.5 text-xs font-medium rounded border ${squatDifficultyBadge.color}`}>
+            <span className={`px-2 py-0.5 text-xs font-medium border ${squatDifficultyBadge.color}`}>
               {squatDifficultyBadge.label}
             </span>
           )}
@@ -249,9 +249,9 @@ export function WorkoutActiveView({ onEnd }: WorkoutActiveViewProps) {
       </div>
 
       {showAutoEndWarning && (
-        <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-yellow-500/20 border border-yellow-500 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-black font-bold">
+            <div className="w-8 h-8 bg-yellow-500 flex items-center justify-center text-black font-bold">
               {autoEndCountdown}
             </div>
             <p className="text-yellow-200 font-medium">
@@ -276,7 +276,7 @@ export function WorkoutActiveView({ onEnd }: WorkoutActiveViewProps) {
       {isCameraMode && stream ? (
         <VideoFeed stream={stream} onVideoReady={handleVideoReady} />
       ) : (
-        <div className="w-full aspect-video bg-dark-800 rounded-lg flex items-center justify-center">
+        <div className="w-full aspect-video bg-dark-800 flex items-center justify-center">
           <p className="text-gray-400">Manual tracking mode</p>
         </div>
       )}
@@ -293,13 +293,13 @@ export function WorkoutActiveView({ onEnd }: WorkoutActiveViewProps) {
             <div className="flex items-center justify-center gap-4">
               <button
                 onClick={decrementRep}
-                className="w-12 h-12 rounded-full bg-dark-700 border border-gray-600 flex items-center justify-center text-gray-300 hover:text-white hover:border-cyan-500 transition-all duration-200 transform hover:scale-110"
+                className="w-12 h-12 bg-dark-700 border border-gray-600 flex items-center justify-center text-gray-300 hover:text-white hover:border-cyan-500 transition-all duration-200 transform hover:scale-110"
               >
                 <Minus size={20} />
               </button>
               <button
                 onClick={incrementRep}
-                className="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center text-black hover:bg-cyan-400 transition-all duration-200 transform hover:scale-110 shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/70"
+                className="w-12 h-12 bg-cyan-500 flex items-center justify-center text-black hover:bg-cyan-400 transition-all duration-200 transform hover:scale-110 shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/70"
               >
                 <Plus size={20} />
               </button>
