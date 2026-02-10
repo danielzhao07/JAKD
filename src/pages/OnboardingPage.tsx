@@ -1,129 +1,287 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronRight, Target, Flame, Dumbbell, TrendingUp, Zap, Shield } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { ROUTES } from '@/utils/constants'
+import { GridBackground } from '@/components/onboarding/GridBackground'
+import { SplitText } from '@/components/onboarding/SplitText'
+import { MagneticGlowButton } from '@/components/onboarding/MagneticGlowButton'
+import { GlowCard } from '@/components/onboarding/GlowCard'
 
-const slides = [
+// ─── Mission Steps ──────────────────────────────────────────────
+
+const TOTAL_STEPS = 3
+
+// Step 0: Welcome
+// Step 1: Select your mission (fitness goal)
+// Step 2: Select your experience level
+
+const fitnessGoals = [
   {
-    title: 'Your All-In-One',
-    highlight: 'Gym Trainer',
-    description: 'Track every rep, every set, and every workout with precision. Your personal fitness journey starts here.',
-    gradient: 'from-cyan-500 to-blue-600',
+    id: 'strength',
+    label: 'Build Strength',
+    desc: 'Lift heavier. Break limits.',
+    icon: Dumbbell,
   },
   {
-    title: 'AI-Powered',
-    highlight: 'Rep Detection',
-    description: 'Use your camera to automatically count reps with real-time pose detection. No more losing count mid-set.',
-    gradient: 'from-emerald-500 to-cyan-600',
+    id: 'muscle',
+    label: 'Gain Muscle',
+    desc: 'Hypertrophy-focused training.',
+    icon: Flame,
   },
   {
-    title: 'Set Goals &',
-    highlight: 'Crush Them',
-    description: 'Track your progress, set personal records, and watch yourself get stronger every day.',
-    gradient: 'from-purple-500 to-pink-600',
+    id: 'endurance',
+    label: 'Boost Endurance',
+    desc: 'Push further. Last longer.',
+    icon: TrendingUp,
+  },
+  {
+    id: 'general',
+    label: 'Stay Fit',
+    desc: 'Overall health & wellness.',
+    icon: Shield,
   },
 ]
+
+const experienceLevels = [
+  {
+    id: 'beginner',
+    label: 'Rookie',
+    desc: 'New to the gym or just getting started.',
+    tag: '0-6 months',
+  },
+  {
+    id: 'intermediate',
+    label: 'Trained',
+    desc: 'Consistent training under your belt.',
+    tag: '6-24 months',
+  },
+  {
+    id: 'advanced',
+    label: 'Veteran',
+    desc: 'Years of serious lifting experience.',
+    tag: '2+ years',
+  },
+]
+
+// ─── Animation Variants ─────────────────────────────────────────
+
+const pageVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 80 : -80,
+    opacity: 0,
+    scale: 0.96,
+    filter: 'blur(4px)',
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    filter: 'blur(0px)',
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -80 : 80,
+    opacity: 0,
+    scale: 0.96,
+    filter: 'blur(4px)',
+  }),
+}
+
+const staggerContainer = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.2,
+    },
+  },
+}
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 24, filter: 'blur(4px)' },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  },
+}
+
+// ─── Component ──────────────────────────────────────────────────
 
 export function OnboardingPage() {
   const navigate = useNavigate()
   const { setHasSeenOnboarding } = useAuthStore()
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
 
-  // Auto-advance slides
-  useEffect(() => {
-    if (!isAutoPlaying) return
-    
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
-    }, 4000)
-    
-    return () => clearInterval(timer)
-  }, [isAutoPlaying])
+  const [step, setStep] = useState(0)
+  const [direction, setDirection] = useState(1)
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(null)
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null)
 
-  const handleGetStarted = () => {
+  const goNext = useCallback(() => {
+    if (step < TOTAL_STEPS - 1) {
+      setDirection(1)
+      setStep((s) => s + 1)
+    }
+  }, [step])
+
+  const goBack = useCallback(() => {
+    if (step > 0) {
+      setDirection(-1)
+      setStep((s) => s - 1)
+    }
+  }, [step])
+
+  const handleLaunch = () => {
     setHasSeenOnboarding(true)
-    navigate('/login')
+    navigate('/signup')
   }
 
-  const handleDotClick = (index: number) => {
-    setCurrentSlide(index)
-    setIsAutoPlaying(false)
-    // Resume auto-play after 10 seconds
-    setTimeout(() => setIsAutoPlaying(true), 10000)
+  const canProceed = () => {
+    if (step === 0) return true
+    if (step === 1) return selectedGoal !== null
+    if (step === 2) return selectedLevel !== null
+    return false
   }
-
-  const slide = slides[currentSlide]
 
   return (
-    <div className="min-h-screen bg-black flex flex-col relative overflow-hidden">
-      {/* Background gradient effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-gradient-to-r ${slide.gradient} opacity-10 blur-3xl transition-all duration-1000`} />
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black via-black/80 to-transparent" />
+    <div className="min-h-screen bg-[#050505] flex flex-col relative overflow-hidden">
+      {/* Dynamic Grid Background */}
+      <div className="absolute inset-0 z-0">
+        <GridBackground />
       </div>
 
-      {/* Top decorative circles */}
-      <div className="absolute top-0 left-0 right-0 h-48 overflow-hidden opacity-30">
-        <div className="absolute top-6 left-6 w-20 h-20 border border-cyan-500/30 rounded-full" />
-        <div className="absolute top-12 right-12 w-32 h-32 border border-cyan-500/20 rounded-full" />
+      {/* Ambient glow orbs */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <motion.div
+          className="absolute w-[500px] h-[500px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(0,255,255,0.08) 0%, transparent 70%)',
+            top: '15%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.5, 0.8, 0.5],
+          }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute w-[300px] h-[300px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(0,255,255,0.05) 0%, transparent 70%)',
+            bottom: '10%',
+            right: '10%',
+          }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.6, 0.3],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        />
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
-        {/* Logo */}
-        <div className="mb-6">
-          <img 
-            src="/jakd-logo.png" 
-            alt="JAKD" 
-            className="h-20 drop-shadow-[0_0_20px_#06b6d4aa]" 
-            style={{ filter: 'invert(1) brightness(2)' }} 
-          />
-        </div>
+      {/* Top bar: step indicator + back button */}
+      <div className="relative z-20 px-6 pt-6 flex items-center justify-between">
+        {step > 0 ? (
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={goBack}
+            className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium flex items-center gap-1"
+          >
+            <ChevronRight size={16} className="rotate-180" />
+            Back
+          </motion.button>
+        ) : (
+          <div />
+        )}
 
-        {/* Title and description */}
-        <div className="text-center max-w-md transition-all duration-500">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-1">
-            {slide.title}
-          </h1>
-          <h2 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${slide.gradient} bg-clip-text text-transparent mb-4`}>
-            {slide.highlight}
-          </h2>
-          <p className="text-gray-400 text-base leading-relaxed px-4">
-            {slide.description}
-          </p>
-        </div>
-      </div>
-
-      {/* Bottom section */}
-      <div className="relative z-10 px-6 pb-8">
-        {/* Dot indicators */}
-        <div className="flex justify-center gap-2 mb-6">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => handleDotClick(index)}
-              className={`transition-all duration-300 rounded-full ${
-                index === currentSlide
-                  ? 'w-6 h-2 bg-cyan-400'
-                  : 'w-2 h-2 bg-gray-600 hover:bg-gray-500'
-              }`}
+        {/* Progress bar */}
+        <div className="flex gap-1.5">
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+            <div
+              key={i}
+              className="h-1 transition-all duration-500"
+              style={{
+                width: i <= step ? 32 : 12,
+                background: i <= step
+                  ? 'linear-gradient(90deg, #00FFFF, #06b6d4)'
+                  : 'rgba(255,255,255,0.1)',
+                boxShadow: i <= step ? '0 0 8px rgba(0,255,255,0.4)' : 'none',
+              }}
             />
           ))}
         </div>
 
-        {/* Get Started button */}
-        <button
-          onClick={handleGetStarted}
-          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 text-black font-bold text-base flex items-center justify-center gap-2 hover:from-cyan-400 hover:to-cyan-300 transition-all duration-300 shadow-lg shadow-cyan-500/20"
-        >
-          Get Started
-          <ChevronRight size={20} />
-        </button>
+        {/* Step counter */}
+        <span className="text-[11px] text-gray-500 font-mono tabular-nums">
+          {String(step + 1).padStart(2, '0')}/{String(TOTAL_STEPS).padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* Main content with AnimatePresence */}
+      <div className="flex-1 flex flex-col relative z-10">
+        <AnimatePresence mode="wait" custom={direction}>
+          {step === 0 && (
+            <StepWelcome key="welcome" direction={direction} onGetStarted={goNext} />
+          )}
+          {step === 1 && (
+            <StepGoal
+              key="goal"
+              direction={direction}
+              selectedGoal={selectedGoal}
+              onSelectGoal={setSelectedGoal}
+            />
+          )}
+          {step === 2 && (
+            <StepLevel
+              key="level"
+              direction={direction}
+              selectedLevel={selectedLevel}
+              onSelectLevel={setSelectedLevel}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Bottom navigation */}
+      <div className="relative z-20 px-6 pb-8">
+        {step > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <MagneticGlowButton
+              onClick={step === TOTAL_STEPS - 1 ? handleLaunch : goNext}
+              disabled={!canProceed()}
+              className="w-full py-3.5 text-base"
+            >
+              {step === TOTAL_STEPS - 1 ? (
+                <>
+                  Launch Mission
+                  <Zap size={18} />
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ChevronRight size={18} />
+                </>
+              )}
+            </MagneticGlowButton>
+          </motion.div>
+        )}
 
         {/* Already have account link */}
-        <p className="text-center mt-4 text-gray-500 text-sm">
+        <motion.p
+          className="text-center mt-4 text-gray-500 text-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
           Already have an account?{' '}
           <button
             onClick={() => {
@@ -134,19 +292,291 @@ export function OnboardingPage() {
           >
             Sign In
           </button>
-        </p>
+        </motion.p>
 
         {/* Legal links */}
-        <p className="text-center text-gray-600 text-xs mt-6">
-          <Link to={ROUTES.PRIVACY_POLICY} className="hover:text-gray-400 transition-colors">
+        <motion.p
+          className="text-center text-xs mt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Link to={ROUTES.PRIVACY_POLICY} className="text-gray-400/60 hover:text-cyan-400/80 transition-colors">
             Privacy Policy
           </Link>
-          {' · '}
-          <Link to={ROUTES.TERMS_OF_SERVICE} className="hover:text-gray-400 transition-colors">
+          <span className="text-gray-400/40 mx-1.5">·</span>
+          <Link to={ROUTES.TERMS_OF_SERVICE} className="text-gray-400/60 hover:text-cyan-400/80 transition-colors">
             Terms of Service
           </Link>
-        </p>
+        </motion.p>
       </div>
     </div>
+  )
+}
+
+// ─── Step 0: Welcome ────────────────────────────────────────────
+
+function StepWelcome({
+  direction,
+  onGetStarted,
+}: {
+  direction: number
+  onGetStarted: () => void
+}) {
+  return (
+    <motion.div
+      custom={direction}
+      variants={pageVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex-1 flex flex-col items-center justify-center px-6"
+    >
+      {/* Logo with pulse glow */}
+      <motion.div
+        className="mb-8 relative"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <div className="absolute inset-0 blur-2xl bg-cyan-500/20 rounded-full scale-150" />
+        <img
+          src="/jakd-logo.png"
+          alt="JAKD"
+          className="h-24 relative z-10 drop-shadow-[0_0_30px_rgba(0,255,255,0.4)]"
+          style={{ filter: 'invert(1) brightness(2)' }}
+        />
+      </motion.div>
+
+      {/* Split text headline */}
+      <div className="text-center max-w-md mb-3">
+        <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-1">
+          <SplitText text="Your Mission" delay={0.2} />
+        </h1>
+        <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+          <SplitText
+            text="Starts Here"
+            className="bg-gradient-to-r from-cyan-400 to-cyan-300 bg-clip-text text-transparent"
+            delay={0.5}
+          />
+        </h2>
+      </div>
+
+      {/* Subtext */}
+      <motion.p
+        className="text-gray-400 text-base text-center max-w-sm leading-relaxed mt-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9, duration: 0.5 }}
+      >
+        AI-powered rep tracking. Real-time form analysis.
+        Your personal gym intelligence system.
+      </motion.p>
+
+      {/* Feature tags */}
+      <motion.div
+        className="flex flex-wrap justify-center gap-3 mt-8"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
+        {['Rep Detection', 'Form Analysis', 'Progress Tracking'].map((tag) => (
+          <motion.span
+            key={tag}
+            variants={staggerItem}
+            className="px-4 py-1.5 text-xs font-medium text-cyan-400 border border-cyan-500/30 bg-cyan-500/5"
+          >
+            {tag}
+          </motion.span>
+        ))}
+      </motion.div>
+
+      {/* Get started CTA */}
+      <motion.div
+        className="mt-12 w-full max-w-sm"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.5 }}
+      >
+        <MagneticGlowButton onClick={onGetStarted} className="w-full py-4 text-lg">
+          Begin Setup
+          <ChevronRight size={20} />
+        </MagneticGlowButton>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ─── Step 1: Select Goal ────────────────────────────────────────
+
+function StepGoal({
+  direction,
+  selectedGoal,
+  onSelectGoal,
+}: {
+  direction: number
+  selectedGoal: string | null
+  onSelectGoal: (id: string) => void
+}) {
+  return (
+    <motion.div
+      custom={direction}
+      variants={pageVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex-1 flex flex-col items-center px-6 pt-8"
+    >
+      {/* Step label */}
+      <motion.span
+        className="text-[11px] font-mono text-cyan-400/60 tracking-[0.25em] uppercase mb-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        Mission Objective
+      </motion.span>
+
+      <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-2">
+        <SplitText text="Select Your Goal" delay={0.1} staggerDelay={0.025} />
+      </h2>
+
+      <motion.p
+        className="text-gray-400 text-sm text-center mb-8 max-w-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        What are you training for? This helps us tailor your experience.
+      </motion.p>
+
+      {/* Goal cards */}
+      <motion.div
+        className="grid grid-cols-2 gap-3 w-full max-w-md"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
+        {fitnessGoals.map((goal) => {
+          const Icon = goal.icon
+          return (
+            <motion.div key={goal.id} variants={staggerItem}>
+              <GlowCard
+                selected={selectedGoal === goal.id}
+                onClick={() => onSelectGoal(goal.id)}
+                className="p-5"
+              >
+                <div className="flex flex-col gap-3">
+                  <div
+                    className={`w-10 h-10 flex items-center justify-center border transition-colors duration-300 ${
+                      selectedGoal === goal.id
+                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-400'
+                        : 'border-dark-700 bg-dark-800 text-gray-400'
+                    }`}
+                  >
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold text-sm">{goal.label}</p>
+                    <p className="text-gray-500 text-xs mt-0.5">{goal.desc}</p>
+                  </div>
+                </div>
+              </GlowCard>
+            </motion.div>
+          )
+        })}
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ─── Step 2: Experience Level ───────────────────────────────────
+
+function StepLevel({
+  direction,
+  selectedLevel,
+  onSelectLevel,
+}: {
+  direction: number
+  selectedLevel: string | null
+  onSelectLevel: (id: string) => void
+}) {
+  return (
+    <motion.div
+      custom={direction}
+      variants={pageVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex-1 flex flex-col items-center px-6 pt-8"
+    >
+      {/* Step label */}
+      <motion.span
+        className="text-[11px] font-mono text-cyan-400/60 tracking-[0.25em] uppercase mb-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        Operator Profile
+      </motion.span>
+
+      <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-2">
+        <SplitText text="Your Experience" delay={0.1} staggerDelay={0.025} />
+      </h2>
+
+      <motion.p
+        className="text-gray-400 text-sm text-center mb-8 max-w-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        Where are you in your fitness journey?
+      </motion.p>
+
+      {/* Level cards */}
+      <motion.div
+        className="flex flex-col gap-3 w-full max-w-md"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
+        {experienceLevels.map((level) => (
+          <motion.div key={level.id} variants={staggerItem}>
+            <GlowCard
+              selected={selectedLevel === level.id}
+              onClick={() => onSelectLevel(level.id)}
+              className="p-5"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <p className="text-white font-semibold">{level.label}</p>
+                    <span
+                      className={`text-[10px] font-mono px-2 py-0.5 transition-colors duration-300 ${
+                        selectedLevel === level.id
+                          ? 'text-cyan-400 bg-cyan-500/20 border border-cyan-500/30'
+                          : 'text-gray-500 bg-dark-800 border border-dark-700'
+                      }`}
+                    >
+                      {level.tag}
+                    </span>
+                  </div>
+                  <p className="text-gray-500 text-sm mt-1">{level.desc}</p>
+                </div>
+                <Target
+                  size={20}
+                  className={`transition-colors duration-300 ${
+                    selectedLevel === level.id ? 'text-cyan-400' : 'text-dark-700'
+                  }`}
+                />
+              </div>
+            </GlowCard>
+          </motion.div>
+        ))}
+      </motion.div>
+    </motion.div>
   )
 }

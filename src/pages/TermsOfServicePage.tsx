@@ -1,19 +1,20 @@
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { ROUTES } from '@/utils/constants'
 
 export function TermsOfServicePage() {
+  const navigate = useNavigate()
+
   return (
     <div className="min-h-screen bg-black text-gray-300">
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back link */}
-        <Link
-          to={ROUTES.LOGIN}
+        <button
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-sm mb-8"
         >
           <ArrowLeft size={16} />
-          Back to Login
-        </Link>
+          Back
+        </button>
 
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
