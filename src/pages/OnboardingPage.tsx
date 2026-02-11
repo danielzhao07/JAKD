@@ -352,18 +352,17 @@ function StepWelcome({
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="flex-1 flex flex-col items-center justify-center px-6"
     >
-      {/* Logo with pulse glow */}
+      {/* Logo */}
       <motion.div
-        className="mb-8 relative"
+        className="mb-8"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        <div className="absolute inset-0 blur-2xl bg-cyan-500/20 rounded-full scale-150" />
         <img
           src="/jakd-logo.png"
           alt="JAKD"
-          className="h-24 relative z-10 drop-shadow-[0_0_30px_rgba(0,255,255,0.4)]"
+          className="h-24"
           style={{ filter: 'invert(1) brightness(2)' }}
         />
       </motion.div>
