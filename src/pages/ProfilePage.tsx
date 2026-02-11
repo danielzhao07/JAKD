@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
 import { useProfileStore } from '@/store/profileStore'
+import { useHistoryStore } from '@/store/historyStore'
 import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { GoalsProgressCard } from '@/components/profile/GoalsProgressCard'
 import { WorkoutPreferences } from '@/components/profile/WorkoutPreferences'
@@ -8,6 +10,23 @@ import { AccountSettings } from '@/components/profile/AccountSettings'
 import { CreateGoalModal } from '@/components/profile/CreateGoalModal'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import type { CreateGoalInput, UpdatePreferencesInput } from '@/types'
+
+// ─── Animation helpers ──────────────────────────────────────────
+function ScrollSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-40px' })
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 export function ProfilePage() {
   const { user, signOut } = useAuthStore()
@@ -22,6 +41,7 @@ export function ProfilePage() {
     loadPreferences,
     updatePreferences,
   } = useProfileStore()
+  const { workouts, loadWorkouts } = useHistoryStore()
 
   const [isCreateGoalModalOpen, setIsCreateGoalModalOpen] = useState(false)
 
@@ -32,6 +52,10 @@ export function ProfilePage() {
       loadPreferences(user.id)
     }
   }, [user?.id, loadActiveGoals, loadPreferences])
+
+  useEffect(() => {
+    loadWorkouts()
+  }, [loadWorkouts])
 
   const handleCreateGoal = async (input: CreateGoalInput) => {
     if (!user?.id) return
@@ -65,49 +89,90 @@ export function ProfilePage() {
   const isLoading = isLoadingGoals || isLoadingPreferences
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Profile</h1>
+    <div className="pb-8 space-y-6">
+      {/* Header */}
+      <ScrollSection>
+        <motion.h1
+          className="text-2xl font-bold text-white"
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          Profile
+        </motion.h1>
+        <motion.p
+          className="text-gray-500 text-sm mt-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Your fitness identity.
+        </motion.p>
+      </ScrollSection>
 
-      <div className="space-y-6">
-        {/* Profile Header */}
-        <ProfileHeader email={user.email || ''} />
+      {/* Player Card */}
+      <ScrollSection delay={0.1}>
+        <ProfileHeader
+          email={user.email || ''}
+          totalWorkouts={workouts.length}
+        />
+      </ScrollSection>
 
-        {/* Loading State */}
+      {/* Loading State */}
+      <AnimatePresence>
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center justify-center py-12"
+          >
             <LoadingSpinner size="lg" />
-          </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Content */}
+      {/* Content */}
+      <AnimatePresence>
         {!isLoading && (
-          <>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="space-y-6"
+          >
             {/* Goals & Milestones */}
-            <GoalsProgressCard
-              goals={activeGoals}
-              onCreateGoal={() => setIsCreateGoalModalOpen(true)}
-              onDeleteGoal={handleDeleteGoal}
-            />
+            <ScrollSection delay={0.15}>
+              <GoalsProgressCard
+                goals={activeGoals}
+                onCreateGoal={() => setIsCreateGoalModalOpen(true)}
+                onDeleteGoal={handleDeleteGoal}
+              />
+            </ScrollSection>
 
             {/* Workout Preferences */}
             {preferences && (
-              <WorkoutPreferences
-                preferences={preferences}
-                onUpdate={handleUpdatePreferences}
-              />
+              <ScrollSection delay={0.2}>
+                <WorkoutPreferences
+                  preferences={preferences}
+                  onUpdate={handleUpdatePreferences}
+                />
+              </ScrollSection>
             )}
 
             {/* Account Settings */}
             {preferences && (
-              <AccountSettings
-                preferences={preferences}
-                onUpdateNotifications={handleUpdateNotifications}
-                onSignOut={signOut}
-              />
+              <ScrollSection delay={0.25}>
+                <AccountSettings
+                  preferences={preferences}
+                  onUpdateNotifications={handleUpdateNotifications}
+                  onSignOut={signOut}
+                />
+              </ScrollSection>
             )}
-          </>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
       {/* Create Goal Modal */}
       <CreateGoalModal

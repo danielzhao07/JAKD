@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react'
-import { Card } from '@/components/shared/Card'
+import { useEffect, useState, useMemo, useRef } from 'react'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { Modal } from '@/components/shared/Modal'
 import { MuscleDistributionChart } from '@/components/charts/MuscleDistributionChart'
@@ -10,149 +10,216 @@ import { VideoStorageRepository } from '@/repositories/VideoStorageRepository'
 import { WorkoutSessionRepository, type WorkoutSessionModel } from '@/repositories/WorkoutSessionRepository'
 import { formatDuration, formatDate, formatTime } from '@/utils/helpers'
 import { EXERCISES_SEED } from '@/utils/constants'
-import { Calendar, Clock, Target, Trash2, Video, Play, TrendingUp, ChevronDown, ChevronRight, BarChart3, Dumbbell, Timer, CheckCircle2 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { useCountUp } from '@/hooks/useCountUp'
+import {
+  Calendar, Clock, Target, Trash2, Video, Play, TrendingUp, ChevronDown,
+  ChevronRight, BarChart3, Dumbbell, Timer, CheckCircle2, Flame,
+  Activity
+} from 'lucide-react'
+import {
+  AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip
+} from 'recharts'
 
-// Workout Session Card Component
-function WorkoutSessionCard({ session, onDelete }: { session: WorkoutSessionModel; onDelete: () => void }) {
+// ─── Animation variants ─────────────────────────────────────────
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+}
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
+
+function ScrollSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-40px' })
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// ─── Glassmorphism stat card ─────────────────────────────────────
+function StatCard({ icon: Icon, label, value, suffix, color = 'cyan' }: {
+  icon: React.ElementType; label: string; value: number; suffix?: string; color?: string
+}) {
+  const animatedValue = useCountUp(value)
+  const colorMap: Record<string, string> = {
+    cyan: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/20',
+    green: 'text-green-400 bg-green-500/15 border-green-500/20',
+    orange: 'text-orange-400 bg-orange-500/15 border-orange-500/20',
+    purple: 'text-purple-400 bg-purple-500/15 border-purple-500/20',
+  }
+  const iconColor = colorMap[color] || colorMap.cyan
+  const textColor = color === 'cyan' ? 'text-cyan-400' : color === 'green' ? 'text-green-400' : color === 'orange' ? 'text-orange-400' : 'text-purple-400'
+
+  return (
+    <motion.div
+      className="bg-dark-800/60 backdrop-blur-md border border-cyan-500/10 p-4 relative overflow-hidden group hover:border-cyan-500/25 transition-colors"
+      whileHover={{ scale: 1.02, y: -2 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    >
+      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-500/5 to-transparent" />
+      <div className={`w-9 h-9 flex items-center justify-center ${iconColor} border mb-3`}>
+        <Icon size={18} />
+      </div>
+      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-bold text-white">
+        {animatedValue.toLocaleString()}
+        {suffix && <span className={`text-sm ml-1 ${textColor}`}>{suffix}</span>}
+      </p>
+    </motion.div>
+  )
+}
+
+// ─── Workout Session Card (animated) ─────────────────────────────
+function WorkoutSessionCard({ session, onDelete }: {
+  session: WorkoutSessionModel; onDelete: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
-  
+
   const formatSessionDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
     if (hours > 0) return `${hours}h ${mins}m`
     return `${mins}m`
   }
-  
+
   const formatSessionDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    })
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   }
-  
+
   const formatSessionTime = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    })
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
-  
+
   return (
-    <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 text-left"
-      >
+    <motion.div
+      variants={staggerItem}
+      layout
+      className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 overflow-hidden hover:border-cyan-500/20 transition-colors"
+    >
+      <button onClick={() => setExpanded(!expanded)} className="w-full p-4 text-left">
         <div className="flex items-start justify-between mb-2">
-          <div>
-            <h3 className="text-white font-semibold text-lg">{session.routineName}</h3>
-            <p className="text-gray-500 text-sm">
-              {formatSessionDate(session.createdAt)} at {formatSessionTime(session.createdAt)}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 flex-shrink-0">
+              <Dumbbell size={18} className="text-cyan-400" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold">{session.routineName}</h3>
+              <p className="text-gray-500 text-xs">
+                {formatSessionDate(session.createdAt)} at {formatSessionTime(session.createdAt)}
+              </p>
+            </div>
           </div>
-          <ChevronDown 
-            size={20} 
-            className={`text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} 
-          />
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={18} className="text-gray-500" />
+          </motion.div>
         </div>
-        
-        <div className="flex gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <Timer size={16} className="text-cyan-400" />
-            <span className="text-cyan-400 font-medium">{formatSessionDuration(session.durationSeconds)}</span>
+
+        <div className="flex gap-4 text-sm ml-[52px]">
+          <div className="flex items-center gap-1.5">
+            <Timer size={14} className="text-cyan-400" />
+            <span className="text-cyan-400 font-medium text-xs">{formatSessionDuration(session.durationSeconds)}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Dumbbell size={16} className="text-gray-400" />
-            <span className="text-white">{Math.round(session.totalVolume)} lbs</span>
+          <div className="flex items-center gap-1.5">
+            <TrendingUp size={14} className="text-gray-400" />
+            <span className="text-white text-xs">{Math.round(session.totalVolume).toLocaleString()} lbs</span>
           </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-green-400" />
-            <span className="text-white">{session.completedSets}/{session.totalSets} sets</span>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 size={14} className="text-green-400" />
+            <span className="text-white text-xs">{session.completedSets}/{session.totalSets} sets</span>
           </div>
         </div>
       </button>
-      
-      {expanded && (
-        <div className="border-t border-dark-700 p-4 space-y-4">
-          {session.exercisesData.map((exercise, idx) => (
-            <div key={idx} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center">
-                  <span className="text-cyan-400 text-xs font-bold">
-                    {exercise.exerciseName.charAt(0)}
-                  </span>
-                </div>
-                <span className="text-cyan-400 font-medium">{exercise.exerciseName}</span>
-              </div>
-              
-              <div className="ml-10 space-y-1">
-                {exercise.sets.filter(s => s.completed).map((set, setIdx) => (
-                  <div key={setIdx} className="flex items-center gap-4 text-sm text-gray-400">
-                    <span className="w-6">Set {set.setNumber}</span>
-                    {set.weight && <span>{set.weight} lbs</span>}
-                    <span>× {set.reps} reps</span>
-                  </div>
-                ))}
-              </div>
-              
-              {exercise.notes && (
-                <p className="ml-10 text-gray-500 text-sm italic">{exercise.notes}</p>
-              )}
-            </div>
-          ))}
-          
-          {session.description && (
-            <p className="text-gray-400 text-sm pt-2 border-t border-dark-700">
-              {session.description}
-            </p>
-          )}
-          
-          {session.photoUrl && (
-            <img 
-              src={session.photoUrl} 
-              alt="Workout" 
-              className="w-full h-48 object-cover rounded-lg"
-            />
-          )}
-          
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-            className="text-red-400 text-sm flex items-center gap-2 hover:text-red-300 transition-colors"
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+            className="overflow-hidden"
           >
-            <Trash2 size={14} />
-            Delete Workout
-          </button>
-        </div>
-      )}
-    </div>
+            <div className="border-t border-dark-700/60 p-4 space-y-4">
+              {session.exercisesData.map((exercise, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center">
+                      <span className="text-cyan-400 text-xs font-bold">{exercise.exerciseName.charAt(0)}</span>
+                    </div>
+                    <span className="text-cyan-400 font-medium text-sm">{exercise.exerciseName}</span>
+                  </div>
+                  <div className="ml-9 space-y-1">
+                    {exercise.sets.filter(s => s.completed).map((set, setIdx) => (
+                      <div key={setIdx} className="flex items-center gap-3 text-xs text-gray-400">
+                        <span className="text-gray-500 w-10">Set {set.setNumber}</span>
+                        {set.weight && <span className="text-white">{set.weight} lbs</span>}
+                        <span className="text-gray-300">{set.reps} reps</span>
+                      </div>
+                    ))}
+                  </div>
+                  {exercise.notes && (
+                    <p className="ml-9 text-gray-500 text-xs italic">{exercise.notes}</p>
+                  )}
+                </motion.div>
+              ))}
+
+              {session.description && (
+                <p className="text-gray-400 text-sm pt-2 border-t border-dark-700/40">{session.description}</p>
+              )}
+
+              {session.photoUrl && (
+                <img src={session.photoUrl} alt="Workout" className="w-full h-48 object-cover" />
+              )}
+
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete() }}
+                className="text-red-400/60 text-xs flex items-center gap-1.5 hover:text-red-400 transition-colors"
+              >
+                <Trash2 size={12} />
+                Delete Workout
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
+// ─── Main Component ──────────────────────────────────────────────
+
 export function HistoryPage() {
   const { user } = useAuthStore()
-  const { workouts, isLoading, error, loadWorkouts, deleteWorkout } =
-    useHistoryStore()
+  const { workouts, isLoading, error, loadWorkouts, deleteWorkout } = useHistoryStore()
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null)
   const [selectedWorkoutName, setSelectedWorkoutName] = useState<string>('')
   const [isLoadingVideo, setIsLoadingVideo] = useState(false)
-  const [activeSection, setActiveSection] = useState<'workouts' | 'statistics' | 'videos'>('workouts')
+  const [activeTab, setActiveTab] = useState<'charts' | 'log' | 'videos'>('charts')
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
   const [showVideoStats, setShowVideoStats] = useState(false)
   const [videoStatsView, setVideoStatsView] = useState<'stats' | 'charts'>('stats')
-  const [statsView, setStatsView] = useState<'calendar' | 'charts'>('calendar')
-  const [calendarView, setCalendarView] = useState<'month' | 'year'>('month')
-  const [calendarDropdownOpen, setCalendarDropdownOpen] = useState(false)
   const [muscleDistributionPeriod, setMuscleDistributionPeriod] = useState<'week' | 'month' | '3months' | 'year'>('month')
   const [muscleDistributionDropdownOpen, setMuscleDistributionDropdownOpen] = useState(false)
-  
+
   // Workout sessions state
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionModel[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(true)
@@ -160,8 +227,7 @@ export function HistoryPage() {
   useEffect(() => {
     loadWorkouts()
   }, [loadWorkouts])
-  
-  // Load workout sessions
+
   useEffect(() => {
     const loadSessions = async () => {
       if (!user) return
@@ -177,7 +243,7 @@ export function HistoryPage() {
     }
     loadSessions()
   }, [user])
-  
+
   const handleDeleteSession = async (sessionId: string) => {
     try {
       await WorkoutSessionRepository.deleteWorkoutSession(sessionId)
@@ -188,38 +254,30 @@ export function HistoryPage() {
   }
 
   const getExerciseName = (exerciseId: string) => {
-    return (
-      EXERCISES_SEED.find((e) => e.id === exerciseId)?.name || 'Unknown Exercise'
-    )
+    return EXERCISES_SEED.find((e) => e.id === exerciseId)?.name || 'Unknown Exercise'
   }
-  
-  // Calculate workout session statistics
+
+  // ─── Session stats ──────────────────────────────────────────
   const sessionStats = useMemo(() => {
     const totalSessions = workoutSessions.length
     const totalVolume = workoutSessions.reduce((sum, s) => sum + s.totalVolume, 0)
     const totalDuration = workoutSessions.reduce((sum, s) => sum + s.durationSeconds, 0)
     const totalSets = workoutSessions.reduce((sum, s) => sum + s.completedSets, 0)
-    
-    // Volume by day (last 7 days)
+
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - (6 - i))
       return date.toDateString()
     })
-    
+
     const volumeByDay = last7Days.map(dateStr => {
       const dayVolume = workoutSessions
         .filter(s => new Date(s.createdAt).toDateString() === dateStr)
         .reduce((sum, s) => sum + s.totalVolume, 0)
-      
       const date = new Date(dateStr)
-      return {
-        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        volume: Math.round(dayVolume),
-      }
+      return { day: date.toLocaleDateString('en-US', { weekday: 'short' }), volume: Math.round(dayVolume) }
     })
-    
-    // Exercise frequency
+
     const exerciseFreq = new Map<string, number>()
     workoutSessions.forEach(s => {
       s.exercisesData.forEach(ex => {
@@ -230,8 +288,7 @@ export function HistoryPage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([name, count]) => ({ name, count }))
-    
-    // Category distribution for pie chart
+
     const categoryDist = new Map<string, number>()
     workoutSessions.forEach(s => {
       s.exercisesData.forEach(ex => {
@@ -239,276 +296,179 @@ export function HistoryPage() {
         categoryDist.set(category, (categoryDist.get(category) || 0) + 1)
       })
     })
-    const categoryData = Array.from(categoryDist.entries())
-      .map(([name, value]) => ({ name, value }))
-    
-    return {
-      totalSessions,
-      totalVolume,
-      totalDuration,
-      totalSets,
-      volumeByDay,
-      topExercises,
-      categoryData,
-    }
+    const categoryData = Array.from(categoryDist.entries()).map(([name, value]) => ({ name, value }))
+
+    return { totalSessions, totalVolume, totalDuration, totalSets, volumeByDay, topExercises, categoryData }
   }, [workoutSessions])
 
-  // Calculate statistics
+  // ─── Global stats (streak, calendar) ────────────────────────
   const stats = useMemo(() => {
     const totalWorkouts = workouts.length
     const totalReps = workouts.reduce((sum, w) => sum + w.repCount, 0)
     const totalDuration = workouts.reduce((sum, w) => sum + (w.durationMs || 0), 0)
     const videoWorkouts = workouts.filter(w => w.videoUrl).length
-    const avgFormScore = videoWorkouts > 0 
+    const avgFormScore = videoWorkouts > 0
       ? workouts.filter(w => w.formScore !== null).reduce((sum, w) => sum + (w.formScore || 0), 0) / workouts.filter(w => w.formScore !== null).length
       : 0
-    
-    // Calculate workout days and streak - include both workouts and sessions
+
     const workoutDates = new Set([
       ...workouts.map(w => new Date(w.createdAt).toDateString()),
       ...workoutSessions.map(s => new Date(s.createdAt).toDateString())
     ])
-    
-    // Calculate streak
+
     let currentStreak = 0
     let restDays = 0
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    
+
     for (let i = 0; i < 30; i++) {
       const checkDate = new Date(today)
       checkDate.setDate(today.getDate() - i)
       const hasWorkout = workoutDates.has(checkDate.toDateString())
-      
-      if (hasWorkout) {
-        currentStreak++
-        restDays = 0
-      } else {
-        if (currentStreak === 0) {
-          restDays++
-        } else {
-          break
-        }
-      }
+      if (hasWorkout) { currentStreak++; restDays = 0 }
+      else { if (currentStreak === 0) restDays++; else break }
     }
-    
-    // Get current and previous month data
+
     const now2 = new Date()
     const currentMonth = now2.getMonth()
     const currentYear = now2.getFullYear()
-    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
-    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear
-    
+
     const generateMonthCalendar = (year: number, month: number) => {
       const daysInMonth = new Date(year, month + 1, 0).getDate()
       const firstDayOfMonth = new Date(year, month, 1).getDay()
-      
-      const calendarDays = []
-      for (let i = 0; i < firstDayOfMonth; i++) {
-        calendarDays.push(null)
-      }
+      const calendarDays: (null | { day: number; hasWorkout: boolean; isToday: boolean })[] = []
+      for (let i = 0; i < firstDayOfMonth; i++) calendarDays.push(null)
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day)
-        const hasWorkout = workoutDates.has(date.toDateString())
-        const isToday = year === now2.getFullYear() && month === now2.getMonth() && day === now2.getDate()
-        calendarDays.push({ day, hasWorkout, isToday })
+        calendarDays.push({
+          day,
+          hasWorkout: workoutDates.has(date.toDateString()),
+          isToday: year === now2.getFullYear() && month === now2.getMonth() && day === now2.getDate()
+        })
       }
       return calendarDays
     }
-    
-    const currentMonthCalendar = generateMonthCalendar(currentYear, currentMonth)
-    const prevMonthCalendar = generateMonthCalendar(prevYear, prevMonth)
-    
-    // Generate year view (all 12 months)
-    const yearCalendar = []
-    for (let month = 0; month < 12; month++) {
-      yearCalendar.push({
-        month,
-        calendar: generateMonthCalendar(currentYear, month)
-      })
-    }
-    
-    return {
-      totalWorkouts,
-      totalReps,
-      totalDuration,
-      videoWorkouts,
-      avgFormScore: Math.round(avgFormScore),
-      workoutDays: workoutDates.size,
-      currentStreak,
-      restDays,
-      currentMonthCalendar,
-      prevMonthCalendar,
-      yearCalendar,
-      currentMonth,
-      currentYear,
-      prevMonth,
-      prevYear
-    }
-  }, [workouts])
 
-  // Calculate muscle distribution and period stats based on selected period
+    const currentMonthCalendar = generateMonthCalendar(currentYear, currentMonth)
+
+    return {
+      totalWorkouts, totalReps, totalDuration, videoWorkouts,
+      avgFormScore: Math.round(avgFormScore), workoutDays: workoutDates.size,
+      currentStreak, restDays, currentMonthCalendar, currentMonth, currentYear
+    }
+  }, [workouts, workoutSessions])
+
+  // ─── Muscle distribution & period stats ─────────────────────
   const { muscleDistribution, periodStats, previousPeriodStats } = useMemo(() => {
     const now = new Date()
     let startDate: Date
     let previousStartDate: Date
     let previousEndDate: Date
-    
+
     switch (muscleDistributionPeriod) {
       case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-        previousStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+        startDate = new Date(now.getTime() - 7 * 86400000)
+        previousStartDate = new Date(now.getTime() - 14 * 86400000)
         previousEndDate = startDate
         break
       case 'month':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        previousStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+        startDate = new Date(now.getTime() - 30 * 86400000)
+        previousStartDate = new Date(now.getTime() - 60 * 86400000)
         previousEndDate = startDate
         break
       case '3months':
-        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
-        previousStartDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000)
+        startDate = new Date(now.getTime() - 90 * 86400000)
+        previousStartDate = new Date(now.getTime() - 180 * 86400000)
         previousEndDate = startDate
         break
       case 'year':
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-        previousStartDate = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000)
+        startDate = new Date(now.getTime() - 365 * 86400000)
+        previousStartDate = new Date(now.getTime() - 730 * 86400000)
         previousEndDate = startDate
         break
     }
-    
+
     const filteredWorkouts = workouts.filter(w => new Date(w.createdAt) >= startDate)
     const previousWorkouts = workouts.filter(w => {
       const date = new Date(w.createdAt)
       return date >= previousStartDate && date < previousEndDate
     })
-    
-    // Calculate muscle distribution
+
     const muscleGroups = ['Back', 'Chest', 'Core', 'Shoulders', 'Arms', 'Legs']
     const muscleDistributionData: Record<string, number> = {}
-    
+
     filteredWorkouts.forEach(workout => {
       const exercise = EXERCISES_SEED.find(e => e.id === workout.exerciseId)
       if (exercise) {
-        // Map exercise type to muscle group category
         let category = 'Core'
         const name = exercise.name.toLowerCase()
-        
-        // Simple name-based mapping
-        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench')) {
-          category = 'Chest'
-        } else if (name.includes('bicep') || name.includes('curl') || name.includes('tricep')) {
-          category = 'Arms'
-        } else if (name.includes('squat') || name.includes('leg') || name.includes('lunge')) {
-          category = 'Legs'
-        } else if (name.includes('shoulder') || name.includes('press') && !name.includes('bench')) {
-          category = 'Shoulders'
-        } else if (name.includes('row') || name.includes('pull') || name.includes('deadlift')) {
-          category = 'Back'
-        } else if (name.includes('ab') || name.includes('crunch') || name.includes('plank')) {
-          category = 'Core'
-        }
-        
+        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench')) category = 'Chest'
+        else if (name.includes('bicep') || name.includes('curl') || name.includes('tricep')) category = 'Arms'
+        else if (name.includes('squat') || name.includes('leg') || name.includes('lunge')) category = 'Legs'
+        else if (name.includes('shoulder') || name.includes('press') && !name.includes('bench')) category = 'Shoulders'
+        else if (name.includes('row') || name.includes('pull') || name.includes('deadlift')) category = 'Back'
+        else if (name.includes('ab') || name.includes('crunch') || name.includes('plank')) category = 'Core'
         muscleDistributionData[category] = (muscleDistributionData[category] || 0) + workout.repCount
       }
     })
-    
-    // Normalize to percentage
+
     const maxReps = Math.max(...Object.values(muscleDistributionData), 1)
     const distribution = muscleGroups.map(group => ({
       name: group,
       value: ((muscleDistributionData[group] || 0) / maxReps) * 100
     }))
-    
-    // Calculate period stats
-    const currentWorkouts = filteredWorkouts.length
-    const currentDuration = filteredWorkouts.reduce((sum, w) => sum + (w.durationMs || 0), 0)
-    const currentReps = filteredWorkouts.reduce((sum, w) => sum + w.repCount, 0)
-    const currentVideos = filteredWorkouts.filter(w => w.videoUrl).length
-    const currentSets = filteredWorkouts.length // Each workout is a set
-    
-    // Volume calculation - only count weighted exercises, ignore bodyweight
-    const currentVolume = filteredWorkouts.reduce((sum, w) => {
+
+    const calcVolume = (wList: typeof workouts) => wList.reduce((sum, w) => {
       const exercise = EXERCISES_SEED.find(e => e.id === w.exerciseId)
       const name = exercise?.name.toLowerCase() || ''
-      // Skip pure bodyweight exercises
-      if (name.includes('push-up') || name.includes('pushup') || 
-          name.includes('squat') && !name.includes('barbell') && !name.includes('dumbbell') ||
-          name.includes('pull-up') || name.includes('chin-up') || name.includes('dip') && !name.includes('weighted')) {
-        return sum
-      }
-      // For weighted exercises, use estimated weight
-      const isLegExercise = name.includes('leg') || name.includes('deadlift')
-      const estimatedWeight = isLegExercise ? 135 : 45
-      return sum + (w.repCount * estimatedWeight)
+      if (name.includes('push-up') || name.includes('pushup') ||
+        name.includes('squat') && !name.includes('barbell') && !name.includes('dumbbell') ||
+        name.includes('pull-up') || name.includes('chin-up') || name.includes('dip') && !name.includes('weighted')) return sum
+      const isLeg = name.includes('leg') || name.includes('deadlift')
+      return sum + (w.repCount * (isLeg ? 135 : 45))
     }, 0)
-    
-    const prevWorkouts = previousWorkouts.length
-    const prevDuration = previousWorkouts.reduce((sum, w) => sum + (w.durationMs || 0), 0)
-    const prevReps = previousWorkouts.reduce((sum, w) => sum + w.repCount, 0)
-    const prevVideos = previousWorkouts.filter(w => w.videoUrl).length
-    const prevSets = previousWorkouts.length
-    const prevVolume = previousWorkouts.reduce((sum, w) => {
-      const exercise = EXERCISES_SEED.find(e => e.id === w.exerciseId)
-      const name = exercise?.name.toLowerCase() || ''
-      if (name.includes('push-up') || name.includes('pushup') || 
-          name.includes('squat') && !name.includes('barbell') && !name.includes('dumbbell') ||
-          name.includes('pull-up') || name.includes('chin-up') || name.includes('dip') && !name.includes('weighted')) {
-        return sum
-      }
-      const isLegExercise = name.includes('leg') || name.includes('deadlift')
-      const estimatedWeight = isLegExercise ? 135 : 45
-      return sum + (w.repCount * estimatedWeight)
-    }, 0)
-    
+
     return {
       muscleDistribution: distribution,
       periodStats: {
-        workouts: currentWorkouts,
-        duration: currentDuration,
-        reps: currentReps,
-        volume: currentVolume,
-        videos: currentVideos,
-        sets: currentSets
+        workouts: filteredWorkouts.length,
+        duration: filteredWorkouts.reduce((sum, w) => sum + (w.durationMs || 0), 0),
+        reps: filteredWorkouts.reduce((sum, w) => sum + w.repCount, 0),
+        volume: calcVolume(filteredWorkouts),
+        videos: filteredWorkouts.filter(w => w.videoUrl).length,
+        sets: filteredWorkouts.length
       },
       previousPeriodStats: {
-        workouts: prevWorkouts,
-        duration: prevDuration,
-        reps: prevReps,
-        volume: prevVolume,
-        videos: prevVideos,
-        sets: prevSets
+        workouts: previousWorkouts.length,
+        duration: previousWorkouts.reduce((sum, w) => sum + (w.durationMs || 0), 0),
+        reps: previousWorkouts.reduce((sum, w) => sum + w.repCount, 0),
+        volume: calcVolume(previousWorkouts),
+        videos: previousWorkouts.filter(w => w.videoUrl).length,
+        sets: previousWorkouts.length
       }
     }
   }, [workouts, muscleDistributionPeriod])
 
-  // Group video workouts by exercise
+  // ─── Video workouts by exercise ─────────────────────────────
   const videoWorkoutsByExercise = useMemo(() => {
     const grouped = new Map<string, typeof workouts>()
-    workouts
-      .filter(w => w.videoUrl)
-      .forEach(workout => {
-        const exerciseName = getExerciseName(workout.exerciseId)
-        if (!grouped.has(exerciseName)) {
-          grouped.set(exerciseName, [])
-        }
-        grouped.get(exerciseName)!.push(workout)
-      })
+    workouts.filter(w => w.videoUrl).forEach(workout => {
+      const exerciseName = getExerciseName(workout.exerciseId)
+      if (!grouped.has(exerciseName)) grouped.set(exerciseName, [])
+      grouped.get(exerciseName)!.push(workout)
+    })
     return grouped
   }, [workouts])
 
   const handlePlayVideo = async (videoUrl: string, exerciseName: string) => {
     setIsLoadingVideo(true)
     setSelectedWorkoutName(exerciseName)
-    
     try {
-      // Get signed URL for playback
       const videoRepo = new VideoStorageRepository()
       const playableUrl = await videoRepo.getVideoUrl(videoUrl)
       setSelectedVideoUrl(playableUrl)
     } catch (err) {
       console.error('Failed to get video URL:', err)
-      // Try using the original URL as fallback
       setSelectedVideoUrl(videoUrl)
     } finally {
       setIsLoadingVideo(false)
@@ -522,50 +482,32 @@ export function HistoryPage() {
 
   const toggleExercise = (exerciseName: string) => {
     const newExpanded = new Set(expandedExercises)
-    if (newExpanded.has(exerciseName)) {
-      newExpanded.delete(exerciseName)
-    } else {
-      newExpanded.add(exerciseName)
-    }
+    if (newExpanded.has(exerciseName)) newExpanded.delete(exerciseName)
+    else newExpanded.add(exerciseName)
     setExpandedExercises(newExpanded)
   }
 
-  // Video stats
+  // ─── Video stats ────────────────────────────────────────────
   const videoStats = useMemo(() => {
     const videoWorkoutsArray = workouts.filter(w => w.videoUrl)
-    const avgFormScore = videoWorkoutsArray.filter(w => w.formScore !== null).length > 0
-      ? Math.round(videoWorkoutsArray.filter(w => w.formScore !== null).reduce((sum, w) => sum + (w.formScore || 0), 0) / videoWorkoutsArray.filter(w => w.formScore !== null).length)
+    const scored = videoWorkoutsArray.filter(w => w.formScore !== null)
+    const avgFormScore = scored.length > 0
+      ? Math.round(scored.reduce((sum, w) => sum + (w.formScore || 0), 0) / scored.length)
       : 0
     const totalDuration = videoWorkoutsArray.reduce((sum, w) => sum + (w.durationMs || 0), 0)
-    const avgReps = videoWorkoutsArray.length > 0 ? Math.round(videoWorkoutsArray.reduce((sum, w) => sum + w.repCount, 0) / videoWorkoutsArray.length) : 0
-    
-    // Get form scores over time for chart
-    const formScoreData = videoWorkoutsArray
-      .filter(w => w.formScore !== null)
+    const avgReps = videoWorkoutsArray.length > 0
+      ? Math.round(videoWorkoutsArray.reduce((sum, w) => sum + w.repCount, 0) / videoWorkoutsArray.length)
+      : 0
+
+    const formScoreData = scored
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .map((w, index) => ({
-        index: index + 1,
-        score: w.formScore || 0,
-        date: formatDate(w.createdAt)
-      }))
-    
-    // Get reps over time for chart
+      .map((w, index) => ({ index: index + 1, score: w.formScore || 0, date: formatDate(w.createdAt) }))
+
     const repsData = videoWorkoutsArray
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .map((w, index) => ({
-        index: index + 1,
-        reps: w.repCount,
-        date: formatDate(w.createdAt)
-      }))
-    
-    return {
-      totalVideos: videoWorkoutsArray.length,
-      avgFormScore,
-      totalDuration,
-      avgReps,
-      formScoreData,
-      repsData
-    }
+      .map((w, index) => ({ index: index + 1, reps: w.repCount, date: formatDate(w.createdAt) }))
+
+    return { totalVideos: videoWorkoutsArray.length, avgFormScore, totalDuration, avgReps, formScoreData, repsData }
   }, [workouts])
 
   if (isLoading && workouts.length === 0) {
@@ -576,701 +518,513 @@ export function HistoryPage() {
     )
   }
 
+  const tabs = [
+    { key: 'charts' as const, label: 'Charts', icon: BarChart3 },
+    { key: 'log' as const, label: 'Log', icon: Activity },
+    { key: 'videos' as const, label: 'Videos', icon: Video },
+  ]
+
+  const periodLabels: Record<string, string> = {
+    week: 'Last 7 days', month: 'Last 30 days', '3months': 'Last 3 months', year: 'Last year'
+  }
+
   return (
-    <div className="pb-6">
-      <h1 className="text-2xl font-bold mb-6">History</h1>
+    <div className="pb-8 space-y-6">
+      {/* ─── Header ─────────────────────────────────────────── */}
+      <ScrollSection>
+        <motion.h1
+          className="text-2xl font-bold text-white"
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          History
+        </motion.h1>
+        <motion.p
+          className="text-gray-500 text-sm mt-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Your workout journey at a glance.
+        </motion.p>
+      </ScrollSection>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-sm text-red-400 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
-      {/* Section Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto">
-        <button
-          onClick={() => setActiveSection('workouts')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
-            activeSection === 'workouts'
-              ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-              : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
-          }`}
+      {/* ─── Bento Stats Grid ───────────────────────────────── */}
+      <ScrollSection delay={0.1}>
+        <motion.div
+          className="grid grid-cols-2 md:grid-cols-4 gap-3"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
         >
-          Workout History
-        </button>
-        <button
-          onClick={() => setActiveSection('statistics')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
-            activeSection === 'statistics'
-              ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-              : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
-          }`}
-        >
-          Statistics
-        </button>
-        <button
-          onClick={() => setActiveSection('videos')}
-          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
-            activeSection === 'videos'
-              ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-              : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
-          }`}
-        >
-          Videos
-        </button>
-      </div>
+          <motion.div variants={staggerItem}>
+            <StatCard icon={Dumbbell} label="Workouts" value={sessionStats.totalSessions + stats.totalWorkouts} color="cyan" />
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <StatCard icon={TrendingUp} label="Volume" value={Math.round(sessionStats.totalVolume)} suffix="lbs" color="purple" />
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <StatCard icon={Timer} label="Active Time" value={Math.round(sessionStats.totalDuration / 60)} suffix="min" color="green" />
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <StatCard icon={Flame} label="Streak" value={stats.currentStreak} suffix="days" color="orange" />
+          </motion.div>
+        </motion.div>
+      </ScrollSection>
 
-      {/* Workout History Section */}
-      {activeSection === 'workouts' && (
-        <div>
-          {/* Session Stats Summary */}
-          {workoutSessions.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-                <p className="text-gray-500 text-xs mb-1">Total Workouts</p>
-                <p className="text-2xl font-bold text-white">{sessionStats.totalSessions}</p>
-              </div>
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-                <p className="text-gray-500 text-xs mb-1">Total Volume</p>
-                <p className="text-2xl font-bold text-white">{Math.round(sessionStats.totalVolume).toLocaleString()} <span className="text-sm text-gray-400">lbs</span></p>
-              </div>
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-                <p className="text-gray-500 text-xs mb-1">Total Time</p>
-                <p className="text-2xl font-bold text-cyan-400">{Math.round(sessionStats.totalDuration / 60)} <span className="text-sm text-gray-400">min</span></p>
-              </div>
-              <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-                <p className="text-gray-500 text-xs mb-1">Sets Completed</p>
-                <p className="text-2xl font-bold text-green-400">{sessionStats.totalSets}</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Volume Chart (Last 7 Days) */}
-          {workoutSessions.length > 0 && sessionStats.volumeByDay.some(d => d.volume > 0) && (
-            <Card className="mb-6">
-              <h3 className="text-white font-semibold mb-4">Volume (Last 7 Days)</h3>
-              <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sessionStats.volumeByDay}>
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false}
-                      tick={{ fill: '#6b7280', fontSize: 12 }}
-                    />
-                    <YAxis hide />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1f2937', 
-                        border: '1px solid #374151',
-                        borderRadius: '8px',
-                        color: '#fff'
-                      }}
-                      formatter={(value: number) => [`${value.toLocaleString()} lbs`, 'Volume']}
-                    />
-                    <Bar 
-                      dataKey="volume" 
-                      fill="#06b6d4" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          )}
-          
-          <h2 className="text-lg font-semibold mb-4 text-white">Recent Workouts</h2>
-          
-          {sessionsLoading ? (
-            <div className="flex items-center justify-center h-32">
-              <LoadingSpinner size="lg" />
-            </div>
-          ) : workoutSessions.length === 0 ? (
-            <Card>
-              <div className="text-center py-12">
-                <Target className="mx-auto text-gray-500 mb-4" size={48} />
-                <p className="text-gray-400 text-lg">No workouts yet</p>
-                <p className="text-gray-500 text-sm mt-1">
-                  Complete a routine workout to see it here
-                </p>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {workoutSessions.map((session) => (
-                <WorkoutSessionCard
-                  key={session.id}
-                  session={session}
-                  onDelete={() => handleDeleteSession(session.id)}
+      {/* ─── Tab Bar ────────────────────────────────────────── */}
+      <ScrollSection delay={0.15}>
+        <div className="flex bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-1 relative">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium relative z-10 transition-colors duration-200 ${
+                activeTab === tab.key ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+              {activeTab === tab.key && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-gradient-to-r from-cyan-600/80 to-cyan-500/80 shadow-lg shadow-cyan-500/20"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
-              ))}
-            </div>
-          )}
+              )}
+            </button>
+          ))}
         </div>
-      )}
+      </ScrollSection>
 
-      {/* Statistics Section */}
-      {activeSection === 'statistics' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Your Stats</h2>
-            
-            {/* View Toggle */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setStatsView('calendar')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  statsView === 'calendar'
-                    ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-                    : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
-                }`}
-              >
-                <Calendar className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setStatsView('charts')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  statsView === 'charts'
-                    ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-                    : 'bg-dark-700 text-gray-400 hover:text-cyan-300 hover:bg-dark-600 border border-cyan-700/20'
-                }`}
-              >
-                <BarChart3 className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          {statsView === 'calendar' ? (
-            <>
-              {/* Streak Info */}
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2 bg-dark-800 rounded-lg px-4 py-2">
-                  <span className="text-2xl">🔥</span>
-                  <div>
-                    <p className="text-white font-semibold">{stats.currentStreak} day streak</p>
-                    <p className="text-xs text-gray-400">Keep it up!</p>
+      {/* ─── Tab Content ────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {/* ═══ Charts Tab ═══ */}
+        {activeTab === 'charts' && (
+          <motion.div
+            key="charts"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
+            {/* Consistency Heatmap */}
+            <ScrollSection>
+              <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                    {new Date(stats.currentYear, stats.currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <Flame size={14} className="text-orange-400" />
+                    <span className="text-orange-400 text-xs font-semibold">{stats.currentStreak} day streak</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-dark-800 rounded-lg px-4 py-2">
-                  <span className="text-2xl">🌙</span>
-                  <div>
-                    <p className="text-white font-semibold">{stats.restDays} rest days</p>
-                    <p className="text-xs text-gray-400">Recovery time</p>
-                  </div>
+
+                <div className="grid grid-cols-7 gap-1.5">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                    <div key={i} className="text-center text-[9px] text-gray-600 font-mono pb-1">{day}</div>
+                  ))}
+                  {stats.currentMonthCalendar.map((day, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2, delay: i * 0.01 }}
+                      className={`aspect-square flex items-center justify-center text-[9px] font-mono relative ${
+                        !day ? ''
+                          : day.isToday
+                            ? 'bg-cyan-500/30 ring-1 ring-cyan-400 text-cyan-300'
+                            : day.hasWorkout
+                              ? 'bg-cyan-500/25 text-cyan-300'
+                              : 'bg-dark-700/40 text-gray-600'
+                      }`}
+                    >
+                      {day?.day}
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 mt-3">
+                  <div className="w-3 h-3 bg-dark-700/40" />
+                  <span className="text-[8px] text-gray-600">Rest</span>
+                  <div className="w-3 h-3 bg-cyan-500/25 ml-1" />
+                  <span className="text-[8px] text-gray-600">Active</span>
                 </div>
               </div>
+            </ScrollSection>
 
-              {/* Calendar View Dropdown */}
-              <div className="relative">
+            {/* Volume Trend Area Chart */}
+            {sessionStats.volumeByDay.some(d => d.volume > 0) && (
+              <ScrollSection delay={0.05}>
+                <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Volume Trend</h3>
+                  <div className="h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={sessionStats.volumeByDay}>
+                        <defs>
+                          <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} />
+                        <YAxis hide />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            border: '1px solid rgba(6, 182, 212, 0.2)',
+                            backdropFilter: 'blur(8px)',
+                            color: '#fff',
+                            fontSize: 12,
+                          }}
+                          formatter={(value: number) => [`${value.toLocaleString()} lbs`, 'Volume']}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="volume"
+                          stroke="#06b6d4"
+                          strokeWidth={2}
+                          fill="url(#volumeGradient)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </ScrollSection>
+            )}
+
+            {/* Muscle Distribution + Period Stats */}
+            <ScrollSection delay={0.1}>
+              <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Muscle Distribution</h3>
+
+                  {/* Period Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setMuscleDistributionDropdownOpen(!muscleDistributionDropdownOpen)}
+                      className="flex items-center gap-1.5 bg-dark-700/60 text-gray-300 px-3 py-1.5 text-xs hover:bg-dark-600/60 transition-colors"
+                    >
+                      {periodLabels[muscleDistributionPeriod]}
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${muscleDistributionDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {muscleDistributionDropdownOpen && (
+                      <div className="absolute top-full right-0 mt-1 bg-dark-800 border border-dark-700 z-20 min-w-[140px] shadow-xl">
+                        {(['week', 'month', '3months', 'year'] as const).map(period => (
+                          <button
+                            key={period}
+                            onClick={() => { setMuscleDistributionPeriod(period); setMuscleDistributionDropdownOpen(false) }}
+                            className={`w-full px-3 py-2 text-left text-xs transition-colors ${
+                              muscleDistributionPeriod === period
+                                ? 'text-cyan-400 bg-cyan-500/10'
+                                : 'text-gray-400 hover:text-white hover:bg-dark-700'
+                            }`}
+                          >
+                            {periodLabels[period]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <MuscleDistributionChart data={muscleDistribution} />
+
+                {/* Period comparison stats */}
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  {[
+                    { label: 'Workouts', current: periodStats.workouts, prev: previousPeriodStats.workouts },
+                    { label: 'Reps', current: periodStats.reps, prev: previousPeriodStats.reps },
+                    { label: 'Sets', current: periodStats.sets, prev: previousPeriodStats.sets },
+                  ].map(({ label, current, prev }) => {
+                    const diff = current - prev
+                    return (
+                      <div key={label} className="bg-dark-700/40 border border-dark-600/40 p-3 text-center">
+                        <p className="text-gray-500 text-[10px] uppercase tracking-wider">{label}</p>
+                        <p className="text-white text-lg font-bold">{current}</p>
+                        <p className={`text-[10px] flex items-center justify-center gap-0.5 ${diff >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
+                          <TrendingUp size={10} />
+                          {diff >= 0 ? '+' : ''}{diff}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </ScrollSection>
+          </motion.div>
+        )}
+
+        {/* ═══ Log Tab ═══ */}
+        {activeTab === 'log' && (
+          <motion.div
+            key="log"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Recent Workouts</h2>
+              <span className="text-xs text-gray-600">{workoutSessions.length} total</span>
+            </div>
+
+            {sessionsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : workoutSessions.length === 0 ? (
+              <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-12 text-center">
+                <Target className="mx-auto text-gray-600 mb-4" size={48} />
+                <p className="text-gray-400 text-lg">No workouts yet</p>
+                <p className="text-gray-600 text-sm mt-1">Complete a routine workout to see it here</p>
+              </div>
+            ) : (
+              <motion.div
+                className="space-y-2"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+              >
+                {workoutSessions.map((session) => (
+                  <WorkoutSessionCard
+                    key={session.id}
+                    session={session}
+                    onDelete={() => handleDeleteSession(session.id)}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ═══ Videos Tab ═══ */}
+        {activeTab === 'videos' && (
+          <motion.div
+            key="videos"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Video Workouts</h2>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setCalendarDropdownOpen(!calendarDropdownOpen)}
-                  className="w-full bg-dark-800 rounded-lg px-4 py-3 flex items-center justify-between text-white hover:bg-dark-700 transition-colors"
+                  onClick={() => setShowVideoStats(!showVideoStats)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                    showVideoStats
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                      : 'bg-dark-700/60 text-gray-400 hover:text-white border border-dark-600/40'
+                  }`}
                 >
-                  <span className="font-medium">
-                    {calendarView === 'month' ? 'Month' : 'Year'}
-                  </span>
-                  <ChevronDown className={`w-5 h-5 transition-transform ${calendarDropdownOpen ? 'rotate-180' : ''}`} />
+                  <BarChart3 size={14} />
+                  Stats
                 </button>
-                
-                {calendarDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 rounded-lg shadow-lg border border-dark-700 z-10">
-                    <button
-                      onClick={() => {
-                        setCalendarView('month')
-                        setCalendarDropdownOpen(false)
-                      }}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors first:rounded-t-lg"
-                    >
-                      Month
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCalendarView('year')
-                        setCalendarDropdownOpen(false)
-                      }}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors last:rounded-b-lg"
-                    >
-                      Year
-                    </button>
+
+                {showVideoStats && (
+                  <div className="flex bg-dark-900/80 p-0.5">
+                    {(['stats', 'charts'] as const).map(view => (
+                      <button
+                        key={view}
+                        onClick={() => setVideoStatsView(view)}
+                        className={`px-2.5 py-1 text-xs capitalize transition-colors ${
+                          videoStatsView === view
+                            ? 'bg-cyan-500/80 text-white'
+                            : 'text-gray-500 hover:text-gray-300'
+                        }`}
+                      >
+                        {view}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Month View - Show 2 months */}
-              {calendarView === 'month' && (
-                <div className="space-y-6">
-                  {/* Current Month */}
-                  <Card>
-                    <h3 className="text-white font-semibold mb-4">
-                      {new Date(stats.currentYear, stats.currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </h3>
-                    
-                    <div className="grid grid-cols-7 gap-2">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                        <div key={i} className="text-center text-xs text-gray-500 font-medium py-1">
-                          {day}
+            {/* Video Stats Panel */}
+            <AnimatePresence>
+              {showVideoStats && videoStatsView === 'stats' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden mb-4"
+                >
+                  <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Total Videos', value: videoStats.totalVideos, color: 'text-white' },
+                        { label: 'Avg Form Score', value: videoStats.avgFormScore, color: 'text-cyan-400' },
+                        { label: 'Total Duration', value: `${Math.floor(videoStats.totalDuration / 60000)}min`, color: 'text-white' },
+                        { label: 'Avg Reps/Video', value: videoStats.avgReps, color: 'text-white' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} className="bg-dark-700/40 border border-dark-600/40 p-3">
+                          <p className="text-gray-500 text-[10px] uppercase tracking-wider">{label}</p>
+                          <p className={`text-xl font-bold ${color}`}>{value}</p>
                         </div>
                       ))}
-                      
-                      {stats.currentMonthCalendar.map((day, i) => (
-                        <div
-                          key={i}
-                          className={`aspect-square flex items-center justify-center text-sm rounded-lg ${
-                            !day
-                              ? ''
-                              : day.isToday
-                              ? 'bg-cyan-500/20 text-cyan-400 font-semibold ring-2 ring-cyan-500 shadow-lg shadow-cyan-500/30'
-                              : day.hasWorkout
-                              ? 'bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/40'
-                              : 'text-gray-400'
-                          }`}
-                        >
-                          {day?.day}
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-
-                  {/* Previous Month */}
-                  <Card>
-                    <h3 className="text-white font-semibold mb-4">
-                      {new Date(stats.prevYear, stats.prevMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </h3>
-                    
-                    <div className="grid grid-cols-7 gap-2">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                        <div key={i} className="text-center text-xs text-gray-500 font-medium py-1">
-                          {day}
-                        </div>
-                      ))}
-                      
-                      {stats.prevMonthCalendar.map((day, i) => (
-                        <div
-                          key={i}
-                          className={`aspect-square flex items-center justify-center text-sm rounded-lg ${
-                            !day
-                              ? ''
-                              : day.hasWorkout
-                              ? 'bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/40'
-                              : 'text-gray-400'
-                          }`}
-                        >
-                          {day?.day}
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-
-                  {/* Legend */}
-                  <div className="flex items-center gap-4 text-xs px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-500/40" />
-                      <span className="text-gray-400">Workout Day</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-cyan-500/20 ring-2 ring-cyan-500" />
-                      <span className="text-gray-400">Today</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
-              {/* Year View - Show all 12 months */}
-              {calendarView === 'year' && (
-                <Card>
-                  <h3 className="text-white font-semibold mb-6 text-center text-xl">
-                    {stats.currentYear}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {stats.yearCalendar.map(({ month, calendar }) => (
-                      <div key={month}>
-                        <h4 className="text-white font-medium mb-2 text-center text-sm">
-                          {new Date(stats.currentYear, month).toLocaleDateString('en-US', { month: 'short' })}
-                        </h4>
-                        <div className="grid grid-cols-7 gap-1">
-                          {calendar.map((day, i) => (
-                            <div
-                              key={i}
-                              className={`aspect-square flex items-center justify-center text-[10px] rounded ${
-                                !day
-                                  ? ''
-                                  : day.isToday
-                                  ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
-                                  : day.hasWorkout
-                                  ? 'bg-cyan-500/30 text-cyan-300'
-                                  : 'bg-gray-800 text-gray-600'
-                              }`}
-                            >
-                              {day?.day}
-                            </div>
-                          ))}
+              {showVideoStats && videoStatsView === 'charts' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden mb-4"
+                >
+                  <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4 space-y-6">
+                    {videoStats.formScoreData.length > 0 && (
+                      <div>
+                        <h4 className="text-cyan-400 text-xs mb-3 font-medium uppercase tracking-wider">Form Score Progress</h4>
+                        <LineChart
+                          data={videoStats.formScoreData.map((d, i) => ({ index: i, value: d.score, label: '' }))}
+                          color="rgb(34, 197, 94)"
+                          maxValue={100}
+                          height={200}
+                        />
+                      </div>
+                    )}
+                    {videoStats.repsData.length > 0 && (
+                      <div>
+                        <h4 className="text-cyan-400 text-xs mb-3 font-medium uppercase tracking-wider">Reps Per Workout</h4>
+                        <LineChart
+                          data={videoStats.repsData.map((d, i) => ({ index: i, value: d.reps, label: '' }))}
+                          color="rgb(59, 130, 246)"
+                          height={200}
+                        />
+                      </div>
+                    )}
+                    {videoStats.formScoreData.length === 0 && videoStats.repsData.length === 0 && (
+                      <div className="text-center py-8 text-gray-600 text-sm">No data available</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Video exercise groups */}
+            {videoWorkoutsByExercise.size === 0 ? (
+              <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-12 text-center">
+                <Video className="mx-auto text-gray-600 mb-4" size={48} />
+                <p className="text-gray-400 text-lg">No video workouts yet</p>
+                <p className="text-gray-600 text-sm mt-1">Complete a workout with video recording to see it here</p>
+              </div>
+            ) : (
+              <motion.div
+                className="space-y-2"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+              >
+                {Array.from(videoWorkoutsByExercise.entries()).map(([exerciseName, exerciseWorkouts]) => (
+                  <motion.div
+                    key={exerciseName}
+                    variants={staggerItem}
+                    className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => toggleExercise(exerciseName)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-dark-700/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
+                          <Video size={16} className="text-cyan-400" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="text-white font-medium text-sm">{exerciseName}</h3>
+                          <span className="text-xs text-gray-500">{exerciseWorkouts.length} recordings</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Charts View */}
-              {/* Muscle Distribution */}
-              <Card>
-                {/* Period Dropdown */}
-                <div className="relative mb-6">
-                  <button
-                    onClick={() => setMuscleDistributionDropdownOpen(!muscleDistributionDropdownOpen)}
-                    className="w-full bg-dark-800 text-white px-4 py-3 rounded-xl flex items-center justify-between"
-                  >
-                    <span>
-                      {muscleDistributionPeriod === 'week' && 'Last 7 days'}
-                      {muscleDistributionPeriod === 'month' && 'Last 30 days'}
-                      {muscleDistributionPeriod === '3months' && 'Last 3 months'}
-                      {muscleDistributionPeriod === 'year' && 'Last year'}
-                    </span>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${
-                      muscleDistributionDropdownOpen ? 'rotate-180' : ''
-                    }`} />
-                  </button>
-                  
-                  {muscleDistributionDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 rounded-xl overflow-hidden z-10 border border-dark-700">
-                      <button
-                        onClick={() => {
-                          setMuscleDistributionPeriod('week')
-                          setMuscleDistributionDropdownOpen(false)
-                        }}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors"
+                      <motion.div
+                        animate={{ rotate: expandedExercises.has(exerciseName) ? 90 : 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        Last 7 days
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMuscleDistributionPeriod('month')
-                          setMuscleDistributionDropdownOpen(false)
-                        }}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors"
-                      >
-                        Last 30 days
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMuscleDistributionPeriod('3months')
-                          setMuscleDistributionDropdownOpen(false)
-                        }}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors"
-                      >
-                        Last 3 months
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMuscleDistributionPeriod('year')
-                          setMuscleDistributionDropdownOpen(false)
-                        }}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-dark-700 transition-colors"
-                      >
-                        Last year
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                <MuscleDistributionChart data={muscleDistribution} />
-                
-                {/* Period Stats Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Card className="bg-dark-800">
-                    <h4 className="text-gray-400 text-sm mb-1">Workouts</h4>
-                    <p className="text-white text-2xl font-semibold">{periodStats.workouts}</p>
-                    <p className={`text-sm flex items-center gap-1 ${
-                      periodStats.workouts >= previousPeriodStats.workouts ? 'text-cyan-400' : 'text-red-400'
-                    }`}>
-                      <TrendingUp className="w-4 h-4" />
-                      {periodStats.workouts - previousPeriodStats.workouts >= 0 ? '+' : ''}{periodStats.workouts - previousPeriodStats.workouts}
-                    </p>
-                  </Card>
-                  
-                  <Card className="bg-dark-800">
-                    <h4 className="text-gray-400 text-sm mb-1">Duration</h4>
-                    <p className="text-white text-2xl font-semibold">
-                      {Math.floor(periodStats.duration / 60000)}min
-                    </p>
-                    <p className={`text-sm flex items-center gap-1 ${
-                      periodStats.duration >= previousPeriodStats.duration ? 'text-cyan-400' : 'text-red-400'
-                    }`}>
-                      <TrendingUp className="w-4 h-4" />
-                      {Math.floor((periodStats.duration - previousPeriodStats.duration) / 60000) >= 0 ? '+' : ''}{Math.floor((periodStats.duration - previousPeriodStats.duration) / 60000)}min
-                    </p>
-                  </Card>
-                  
-                  <Card className="bg-dark-800">
-                    <h4 className="text-gray-400 text-sm mb-1">Reps</h4>
-                    <p className="text-white text-2xl font-semibold">{periodStats.reps}</p>
-                    <p className={`text-sm flex items-center gap-1 ${
-                      periodStats.reps >= previousPeriodStats.reps ? 'text-cyan-400' : 'text-red-400'
-                    }`}>
-                      <TrendingUp className="w-4 h-4" />
-                      {periodStats.reps - previousPeriodStats.reps >= 0 ? '+' : ''}{periodStats.reps - previousPeriodStats.reps}
-                    </p>
-                  </Card>
-                  
-                  <Card className="bg-dark-800">
-                    <h4 className="text-gray-400 text-sm mb-1">Sets</h4>
-                    <p className="text-white text-2xl font-semibold">{periodStats.sets}</p>
-                    <p className={`text-sm flex items-center gap-1 ${
-                      periodStats.sets >= previousPeriodStats.sets ? 'text-cyan-400' : 'text-red-400'
-                    }`}>
-                      <TrendingUp className="w-4 h-4" />
-                      {periodStats.sets - previousPeriodStats.sets >= 0 ? '+' : ''}{periodStats.sets - previousPeriodStats.sets}
-                    </p>
-                  </Card>
-                  
-                  {periodStats.volume > 0 && (
-                    <Card className="bg-dark-800">
-                      <h4 className="text-gray-400 text-sm mb-1">Volume</h4>
-                      <p className="text-white text-2xl font-semibold">{periodStats.volume} lbs</p>
-                      <p className={`text-sm flex items-center gap-1 ${
-                        periodStats.volume >= previousPeriodStats.volume ? 'text-cyan-400' : 'text-red-400'
-                      }`}>
-                        <TrendingUp className="w-4 h-4" />
-                        {periodStats.volume - previousPeriodStats.volume >= 0 ? '+' : ''}{periodStats.volume - previousPeriodStats.volume} lbs
-                      </p>
-                    </Card>
-                  )}
-                  
-                  <Card className="bg-dark-800">
-                    <h4 className="text-gray-400 text-sm mb-1">Videos</h4>
-                    <p className="text-white text-2xl font-semibold">{periodStats.videos}</p>
-                    <p className={`text-sm flex items-center gap-1 ${
-                      periodStats.videos >= previousPeriodStats.videos ? 'text-cyan-400' : 'text-red-400'
-                    }`}>
-                      <TrendingUp className="w-4 h-4" />
-                      {periodStats.videos - previousPeriodStats.videos >= 0 ? '+' : ''}{periodStats.videos - previousPeriodStats.videos}
-                    </p>
-                  </Card>
-                </div>
-              </Card>
+                        <ChevronRight size={16} className="text-gray-500" />
+                      </motion.div>
+                    </button>
 
-              {/* Progression Chart Placeholder */}
-              <Card>
-                <h3 className="text-white font-semibold mb-4">Workout Progression</h3>
-                <div className="h-48 flex items-center justify-center">
-                  <p className="text-gray-500 text-sm">Progression charts coming soon</p>
-                </div>
-              </Card>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Videos Section */}
-      {activeSection === 'videos' && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Video Workouts</h2>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowVideoStats(!showVideoStats)}
-                className="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span className="text-sm">Stats</span>
-              </button>
-              
-              {showVideoStats && (
-                <div className="flex gap-1 bg-dark-900 rounded-lg p-1">
-                  <button
-                    onClick={() => setVideoStatsView('stats')}
-                    className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
-                      videoStatsView === 'stats'
-                        ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-                        : 'text-gray-400 hover:text-cyan-300 hover:bg-dark-600'
-                    }`}
-                  >
-                    Stats
-                  </button>
-                  <button
-                    onClick={() => setVideoStatsView('charts')}
-                    className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
-                      videoStatsView === 'charts'
-                        ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-                        : 'text-gray-400 hover:text-cyan-300 hover:bg-dark-600'
-                    }`}
-                  >
-                    Charts
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Video Stats Modal */}
-          {showVideoStats && videoStatsView === 'stats' && (
-            <Card className="mb-6">
-              <h3 className="text-white font-semibold mb-4">Video Workout Statistics</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-gray-400 text-sm">Total Videos</p>
-                  <p className="text-2xl font-bold text-white">{videoStats.totalVideos}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Avg Form Score</p>
-                  <p className="text-2xl font-bold text-cyan-400">{videoStats.avgFormScore}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Total Duration</p>
-                  <p className="text-2xl font-bold text-white">{Math.floor(videoStats.totalDuration / 60000)}min</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Avg Reps/Video</p>
-                  <p className="text-2xl font-bold text-white">{videoStats.avgReps}</p>
-                </div>
-              </div>
-            </Card>
-          )}
-          
-          {/* Video Stats Charts */}
-          {showVideoStats && videoStatsView === 'charts' && (
-            <Card className="mb-6">
-              <h3 className="text-white font-semibold mb-6">Video Workout Trends</h3>
-              
-              {/* Form Score Chart */}
-              {videoStats.formScoreData.length > 0 && (
-                <div className="mb-8">
-                  <h4 className="text-cyan-400 text-sm mb-4 font-medium">Form Score Progress</h4>
-                  <LineChart
-                    data={videoStats.formScoreData.map((d, i) => ({
-                      index: i,
-                      value: d.score,
-                      label: ''
-                    }))}
-                    color="rgb(34, 197, 94)"
-                    maxValue={100}
-                    height={240}
-                  />
-                </div>
-              )}
-              
-              {/* Reps Chart */}
-              {videoStats.repsData.length > 0 && (
-                <div>
-                  <h4 className="text-cyan-400 text-sm mb-4 font-medium">Reps Per Workout</h4>
-                  <LineChart
-                    data={videoStats.repsData.map((d, i) => ({
-                      index: i,
-                      value: d.reps,
-                      label: ''
-                    }))}
-                    color="rgb(59, 130, 246)"
-                    height={240}
-                  />
-                </div>
-              )}
-              
-              {videoStats.formScoreData.length === 0 && videoStats.repsData.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No data available for charts
-                </div>
-              )}
-            </Card>
-          )}
-          
-          {videoWorkoutsByExercise.size === 0 ? (
-            <Card>
-              <div className="text-center py-12">
-                <Video className="mx-auto text-gray-500 mb-4" size={48} />
-                <p className="text-gray-400 text-lg">No video workouts yet</p>
-                <p className="text-gray-500 text-sm mt-1">
-                  Complete a workout with video recording to see it here
-                </p>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {Array.from(videoWorkoutsByExercise.entries()).map(([exerciseName, exerciseWorkouts]) => (
-                <div key={exerciseName} className="bg-dark-800 rounded-lg">
-                  <button
-                    onClick={() => toggleExercise(exerciseName)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-dark-700 transition-colors rounded-lg"
-                  >
-                    <h3 className="text-white font-semibold flex items-center gap-2">
-                      <Video className="w-5 h-5 text-cyan-400" />
-                      {exerciseName}
-                      <span className="text-sm text-gray-400 font-normal">
-                        ({exerciseWorkouts.length})
-                      </span>
-                    </h3>
-                    {expandedExercises.has(exerciseName) ? (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    )}
-                  </button>
-                  
-                  {expandedExercises.has(exerciseName) && (
-                    <div className="px-4 pb-4 space-y-3">
-                      {exerciseWorkouts.map((workout) => (
-                        <Card key={workout.id}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                                <span className="flex items-center gap-1">
-                                  <Calendar size={14} />
-                                  {formatDate(workout.createdAt)}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock size={14} />
-                                  {formatTime(workout.createdAt)}
-                                </span>
-                                {workout.durationMs > 0 && (
-                                  <span>{formatDuration(workout.durationMs)}</span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-6">
-                              <button
-                                onClick={() => handlePlayVideo(workout.videoUrl!, exerciseName)}
-                                className="flex items-center gap-1 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50"
+                    <AnimatePresence>
+                      {expandedExercises.has(exerciseName) && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4 space-y-2 border-t border-dark-700/40">
+                            {exerciseWorkouts.map((workout) => (
+                              <motion.div
+                                key={workout.id}
+                                initial={{ opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="bg-dark-700/30 border border-dark-600/30 p-3 flex items-center justify-between mt-2"
                               >
-                                <Play size={16} />
-                                <span className="text-sm">Play</span>
-                              </button>
-                              <div className="text-right">
-                                <p className="text-2xl font-bold text-cyan-400">
-                                  {workout.repCount}
-                                </p>
-                                <p className="text-xs text-gray-400">reps</p>
-                              </div>
-                              {workout.formScore !== null && (
-                                <div className="text-right">
-                                  <p className="text-lg font-semibold text-white">
-                                    {workout.formScore}
-                                  </p>
-                                  <p className="text-xs text-gray-400">form</p>
+                                <div className="flex items-center gap-3 text-xs text-gray-400">
+                                  <Calendar size={12} />
+                                  <span>{formatDate(workout.createdAt)}</span>
+                                  <Clock size={12} />
+                                  <span>{formatTime(workout.createdAt)}</span>
+                                  {workout.durationMs > 0 && <span className="text-gray-500">{formatDuration(workout.durationMs)}</span>}
                                 </div>
-                              )}
-                              <button
-                                onClick={() => deleteWorkout(workout.id)}
-                                className="text-gray-500 hover:text-red-400 transition-colors p-2"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                                <div className="flex items-center gap-4">
+                                  <button
+                                    onClick={() => handlePlayVideo(workout.videoUrl!, exerciseName)}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 bg-cyan-500/15 text-cyan-400 text-xs hover:bg-cyan-500/25 transition-colors"
+                                  >
+                                    <Play size={12} />
+                                    Play
+                                  </button>
+                                  <div className="text-right">
+                                    <p className="text-cyan-400 font-bold text-sm">{workout.repCount}</p>
+                                    <p className="text-[9px] text-gray-500">reps</p>
+                                  </div>
+                                  {workout.formScore !== null && (
+                                    <div className="text-right">
+                                      <p className="text-white font-semibold text-sm">{workout.formScore}</p>
+                                      <p className="text-[9px] text-gray-500">form</p>
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => deleteWorkout(workout.id)}
+                                    className="text-gray-600 hover:text-red-400 transition-colors p-1"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </motion.div>
+                            ))}
                           </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Video Modal */}
+      {/* ─── Video Modal ──────────────────────────────────────── */}
       <Modal
         isOpen={!!selectedVideoUrl || isLoadingVideo}
         onClose={handleCloseVideo}
@@ -1283,16 +1037,11 @@ export function HistoryPage() {
           </div>
         ) : selectedVideoUrl ? (
           <div className="space-y-4">
-            <video
-              src={selectedVideoUrl}
-              controls
-              autoPlay
-              className="w-full aspect-video rounded-lg bg-black"
-            />
+            <video src={selectedVideoUrl} controls autoPlay className="w-full aspect-video bg-black" />
             <div className="flex justify-end">
               <button
                 onClick={handleCloseVideo}
-                className="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white text-sm transition-colors"
               >
                 Close
               </button>
