@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
 
 interface SplitTextProps {
   text: string
@@ -14,36 +13,34 @@ export function SplitText({
   delay = 0,
   staggerDelay = 0.03,
 }: SplitTextProps) {
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768)
-  }, [])
-
   const words = text.split(' ')
 
+  // Check if mobile - but be conservative to avoid SSR issues
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
+  // On mobile, use a simpler, faster animation
   if (isMobile) {
     return (
-      <span className={className} aria-label={text}>
+      <span className={className}>
         {words.map((word, wi) => (
           <motion.span
             key={wi}
-            className="inline-block whitespace-pre"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
+            className="inline-block mr-[0.25em]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{
-              duration: 0.35,
-              delay: delay + wi * 0.06,
-              ease: [0.25, 0.46, 0.45, 0.94] as const,
+              duration: 0.2,
+              delay: delay + wi * 0.03,
             }}
           >
-            {word}{wi < words.length - 1 ? '\u00A0' : ''}
+            {word}
           </motion.span>
         ))}
       </span>
     )
   }
 
+  // Desktop: character-by-character animation
   return (
     <span className={className} aria-label={text}>
       {words.map((word, wi) => (
