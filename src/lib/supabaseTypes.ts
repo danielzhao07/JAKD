@@ -10,6 +10,9 @@ export interface Database {
           thumbnail_url: string | null
           detector_type: string
           created_at: string
+          created_by: string | null
+          is_custom: boolean
+          equipment: string | null
         }
         Insert: {
           id?: string
@@ -19,6 +22,9 @@ export interface Database {
           thumbnail_url?: string | null
           detector_type: string
           created_at?: string
+          created_by?: string | null
+          is_custom?: boolean
+          equipment?: string | null
         }
         Update: {
           id?: string
@@ -28,6 +34,9 @@ export interface Database {
           thumbnail_url?: string | null
           detector_type?: string
           created_at?: string
+          created_by?: string | null
+          is_custom?: boolean
+          equipment?: string | null
         }
         Relationships: []
       }

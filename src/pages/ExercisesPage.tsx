@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, X, TrendingUp, Grid3X3, MoreHorizontal, Dumbbell, Circle, ArrowLeft, BarChart3, ChevronRight, Clock, Bookmark } from 'lucide-react'
+import { Search, X, TrendingUp, Grid3X3, MoreHorizontal, Dumbbell, Circle, ArrowLeft, BarChart3, ChevronRight, Clock, Bookmark, Trash2 } from 'lucide-react'
 import { useHistoryStore } from '@/store/historyStore'
 import { useExerciseStore } from '@/store/exerciseStore'
 import { ROUTES } from '@/utils/constants'
@@ -704,16 +704,26 @@ function ExerciseDetailModal({
 }
 
 // Exercise list item
-function ExerciseListItem({ exercise, onTrendClick }: { exercise: LibraryExercise, onTrendClick: () => void }) {
+function ExerciseListItem({ exercise, onTrendClick, isCustom, onDelete }: { exercise: LibraryExercise, onTrendClick: () => void, isCustom?: boolean, onDelete?: () => void }) {
   return (
     <div className="flex items-center gap-3 py-3 border-b border-dark-700">
       <div className="flex-1 min-w-0">
         <h3 className="text-white text-[15px] font-medium">{exercise.name}</h3>
         <p className="text-gray-500 text-[14px]">{exercise.muscleGroup}</p>
       </div>
-      
+
+      {/* Delete button for custom exercises */}
+      {isCustom && onDelete && (
+        <button
+          onClick={onDelete}
+          className="w-9 h-9 rounded-full border border-red-600/50 flex items-center justify-center transition-all duration-200 hover:bg-red-600 hover:border-red-500 group"
+        >
+          <Trash2 className="w-4 h-4 text-red-400 group-hover:text-white transition-colors" />
+        </button>
+      )}
+
       {/* Trend icon - Cyan with hover effect */}
-      <button 
+      <button
         onClick={onTrendClick}
         className="w-10 h-10 rounded-full border border-cyan-600 flex items-center justify-center transition-all duration-200 hover:bg-cyan-600 hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/50 group transform hover:scale-110"
       >
@@ -725,7 +735,8 @@ function ExerciseListItem({ exercise, onTrendClick }: { exercise: LibraryExercis
 
 export function ExercisesPage() {
   const navigate = useNavigate()
-  const { exercises: customExercises, fetchExercises: fetchCustomExercises } = useExerciseStore()
+  const { exercises: customExercises, fetchExercises: fetchCustomExercises, deleteExercise } = useExerciseStore()
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment>('All Equipment')
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup>('All Muscles')
@@ -971,9 +982,45 @@ export function ExercisesPage() {
                 key={exercise.id}
                 exercise={exercise}
                 onTrendClick={() => setSelectedExercise(exercise)}
+                isCustom
+                onDelete={() => setDeleteConfirmId(exercise.id)}
               />
             ))}
           </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmId && (
+          <>
+            <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setDeleteConfirmId(null)} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+              <div className="bg-dark-800 w-full max-w-sm p-6 border border-dark-700">
+                <h3 className="text-white text-lg font-semibold mb-2">Delete Exercise</h3>
+                <p className="text-gray-400 text-sm mb-6">Are you sure you want to delete this custom exercise? This cannot be undone.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="flex-1 py-2.5 bg-dark-700 text-white text-sm font-medium hover:bg-dark-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await deleteExercise(deleteConfirmId)
+                        setDeleteConfirmId(null)
+                      } catch (err) {
+                        console.error('Failed to delete exercise:', err)
+                      }
+                    }}
+                    className="flex-1 py-2.5 bg-red-600 text-white text-sm font-medium hover:bg-red-500 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
         {/* All Exercises */}

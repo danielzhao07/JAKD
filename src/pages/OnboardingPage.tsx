@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, Target, Flame, Dumbbell, TrendingUp, Zap, Shield } from 'lucide-react'
@@ -65,26 +65,20 @@ const experienceLevels = [
   },
 ]
 
-// ─── Animation Variants ─────────────────────────────────────────
+// ─── Animation Variants (no blur filter — expensive on mobile) ──
 
 const pageVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 80 : -80,
+    x: direction > 0 ? 60 : -60,
     opacity: 0,
-    scale: 0.96,
-    filter: 'blur(4px)',
   }),
   center: {
     x: 0,
     opacity: 1,
-    scale: 1,
-    filter: 'blur(0px)',
   },
   exit: (direction: number) => ({
-    x: direction > 0 ? -80 : 80,
+    x: direction > 0 ? -60 : 60,
     opacity: 0,
-    scale: 0.96,
-    filter: 'blur(4px)',
   }),
 }
 
@@ -99,12 +93,11 @@ const staggerContainer = {
 }
 
 const staggerItem = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(4px)' },
+  hidden: { opacity: 0, y: 20 },
   show: {
     opacity: 1,
     y: 0,
-    filter: 'blur(0px)',
-    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
 }
 
@@ -118,6 +111,8 @@ export function OnboardingPage() {
   const [direction, setDirection] = useState(1)
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null)
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null)
+
+  const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, [])
 
   const goNext = useCallback(() => {
     if (step < TOTAL_STEPS - 1) {
@@ -146,45 +141,69 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col relative overflow-hidden">
+    <div className="h-[100dvh] bg-[#050505] flex flex-col relative overflow-hidden">
       {/* Dynamic Grid Background */}
       <div className="absolute inset-0 z-0">
         <GridBackground />
       </div>
 
-      {/* Ambient glow orbs */}
+      {/* Ambient glow orbs — static on mobile, animated on desktop */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <motion.div
-          className="absolute w-[500px] h-[500px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(0,255,255,0.08) 0%, transparent 70%)',
-            top: '15%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-          animate={{
-            scale: [1, 1.15, 1],
-            opacity: [0.5, 0.8, 0.5],
-          }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute w-[300px] h-[300px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(0,255,255,0.05) 0%, transparent 70%)',
-            bottom: '10%',
-            right: '10%',
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
+        {isMobile ? (
+          <>
+            <div
+              className="absolute w-[400px] h-[400px] rounded-full opacity-60"
+              style={{
+                background: 'radial-gradient(circle, rgba(0,255,255,0.08) 0%, transparent 70%)',
+                top: '15%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+            <div
+              className="absolute w-[250px] h-[250px] rounded-full opacity-40"
+              style={{
+                background: 'radial-gradient(circle, rgba(0,255,255,0.05) 0%, transparent 70%)',
+                bottom: '10%',
+                right: '10%',
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <motion.div
+              className="absolute w-[500px] h-[500px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(0,255,255,0.08) 0%, transparent 70%)',
+                top: '15%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+              animate={{
+                scale: [1, 1.15, 1],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+              className="absolute w-[300px] h-[300px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(0,255,255,0.05) 0%, transparent 70%)',
+                bottom: '10%',
+                right: '10%',
+              }}
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.6, 0.3],
+              }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+            />
+          </>
+        )}
       </div>
 
       {/* Top bar: step indicator + back button */}
-      <div className="relative z-20 px-6 pt-6 flex items-center justify-between">
+      <div className="relative z-20 px-6 pt-6 flex items-center justify-between flex-shrink-0">
         {step > 0 ? (
           <motion.button
             initial={{ opacity: 0, x: -10 }}
@@ -222,8 +241,8 @@ export function OnboardingPage() {
         </span>
       </div>
 
-      {/* Main content with AnimatePresence */}
-      <div className="flex-1 flex flex-col relative z-10">
+      {/* Main content with AnimatePresence — scrollable */}
+      <div className="flex-1 flex flex-col relative z-10 min-h-0 overflow-y-auto">
         <AnimatePresence mode="wait" custom={direction}>
           {step === 0 && (
             <StepWelcome key="welcome" direction={direction} onGetStarted={goNext} />
@@ -247,8 +266,8 @@ export function OnboardingPage() {
         </AnimatePresence>
       </div>
 
-      {/* Bottom navigation */}
-      <div className="relative z-20 px-6 pb-8">
+      {/* Bottom navigation — always visible, pinned at bottom */}
+      <div className="relative z-20 px-6 pb-6 pt-3 flex-shrink-0 bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent">
         {step > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -277,7 +296,7 @@ export function OnboardingPage() {
 
         {/* Already have account link */}
         <motion.p
-          className="text-center mt-4 text-gray-500 text-sm"
+          className="text-center mt-3 text-gray-500 text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
@@ -296,7 +315,7 @@ export function OnboardingPage() {
 
         {/* Legal links */}
         <motion.p
-          className="text-center text-xs mt-6"
+          className="text-center text-xs mt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
@@ -330,7 +349,7 @@ function StepWelcome({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="flex-1 flex flex-col items-center justify-center px-6"
     >
       {/* Logo with pulse glow */}
@@ -426,8 +445,8 @@ function StepGoal({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="flex-1 flex flex-col items-center px-6 pt-8"
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex-1 flex flex-col items-center px-6 pt-6 pb-4"
     >
       {/* Step label */}
       <motion.span
@@ -444,7 +463,7 @@ function StepGoal({
       </h2>
 
       <motion.p
-        className="text-gray-400 text-sm text-center mb-8 max-w-sm"
+        className="text-gray-400 text-sm text-center mb-6 max-w-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
@@ -510,8 +529,8 @@ function StepLevel({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="flex-1 flex flex-col items-center px-6 pt-8"
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex-1 flex flex-col items-center px-6 pt-6 pb-4"
     >
       {/* Step label */}
       <motion.span
@@ -528,7 +547,7 @@ function StepLevel({
       </h2>
 
       <motion.p
-        className="text-gray-400 text-sm text-center mb-8 max-w-sm"
+        className="text-gray-400 text-sm text-center mb-6 max-w-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}

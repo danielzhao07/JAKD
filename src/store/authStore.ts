@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useExerciseStore } from '@/store/exerciseStore'
 
 interface AuthState {
   user: User | null
@@ -81,6 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     set({ isLoading: true })
     await supabase.auth.signOut()
+    useExerciseStore.getState().clearExercises()
     set({ user: null, session: null, isLoading: false })
   },
 

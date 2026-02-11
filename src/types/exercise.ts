@@ -12,4 +12,5 @@ export interface Exercise {
   createdAt: string
   isCustom?: boolean
   equipment?: string
+  createdBy?: string | null
 }
