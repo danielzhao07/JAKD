@@ -91,15 +91,32 @@ export function GoalsProgressCard({ goals, onCreateGoal, onDeleteGoal }: GoalsPr
               >
                 {/* Glow for completed */}
                 {isComplete && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent pointer-events-none" />
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent pointer-events-none" />
+                    <motion.div
+                      className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-400/10 to-transparent"
+                      animate={{
+                        opacity: [0.3, 0.6, 0.3],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  </>
                 )}
 
                 {/* Delete button */}
                 <button
-                  onClick={() => onDeleteGoal(goal.id)}
-                  className="absolute top-3 right-3 text-gray-600 hover:text-red-400 transition-colors p-1 z-10"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteGoal(goal.id)
+                  }}
+                  className="absolute top-3 right-3 text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors p-1.5 z-20 rounded"
+                  title="Delete goal"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </button>
 
                 <div className="pr-8 relative z-10">

@@ -14,6 +14,7 @@ import {
   Library,
   TrendingUp,
   Timer,
+  Target,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useWorkoutStore } from '@/store/workoutStore'
@@ -21,9 +22,12 @@ import { useHistoryStore } from '@/store/historyStore'
 import { useRoutineStore } from '@/store/routineStore'
 import { useExerciseStore } from '@/store/exerciseStore'
 import { useWorkoutSessionStore } from '@/store/workoutSessionStore'
+import { useProfileStore } from '@/store/profileStore'
+import { GOAL_TYPE_LABELS } from '@/types'
 import { Modal } from '@/components/shared/Modal'
 import { Button } from '@/components/shared/Button'
 import { ROUTES, EXERCISES_SEED } from '@/utils/constants'
+import { MuscleDistributionChart } from '@/components/charts/MuscleDistributionChart'
 import type { Exercise } from '@/types'
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -95,12 +99,55 @@ function ScrollSection({ children, className = '', delay = 0 }: { children: Reac
       ref={ref}
       initial={{ opacity: 0, y: 24 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+      transition={{ duration: 0.75, delay, ease: [0.25, 0.46, 0.45, 0.94] as const }}
       className={className}
     >
       {children}
     </motion.div>
   )
+}
+
+// ─── Daily Quotes ───────────────────────────────────────────────
+
+const DAILY_QUOTES = [
+  { text: 'The last three or four reps is what makes the muscle grow.', author: 'Arnold Schwarzenegger' },
+  { text: 'Strength does not come from physical capacity. It comes from an indomitable will.', author: 'Mahatma Gandhi' },
+  { text: 'The iron never lies to you. Two hundred pounds is always two hundred pounds.', author: 'Henry Rollins' },
+  { text: 'No citizen has a right to be an amateur in the matter of physical training.', author: 'Socrates' },
+  { text: 'I hated every minute of training, but I said, don\'t quit. Suffer now and live the rest of your life as a champion.', author: 'Muhammad Ali' },
+  { text: 'The successful warrior is the average man, with laser-like focus.', author: 'Bruce Lee' },
+  { text: 'Once you learn to quit, it becomes a habit.', author: 'Vince Lombardi' },
+  { text: 'Hard work beats talent when talent doesn\'t work hard.', author: 'Tim Notke' },
+  { text: 'We are what we repeatedly do. Excellence, then, is not an act but a habit.', author: 'Aristotle' },
+  { text: 'Don\'t count the days, make the days count.', author: 'Muhammad Ali' },
+  { text: 'The resistance that you fight physically in the gym can only build a strong character.', author: 'Arnold Schwarzenegger' },
+  { text: 'If something stands between you and your success, move it. Never be denied.', author: 'Dwayne Johnson' },
+  { text: 'Discipline is the bridge between goals and accomplishment.', author: 'Jim Rohn' },
+  { text: 'You miss 100% of the shots you don\'t take.', author: 'Wayne Gretzky' },
+  { text: 'The only way to define your limits is by going beyond them.', author: 'Arthur C. Clarke' },
+  { text: 'Everybody wants to be a bodybuilder, but nobody wants to lift no heavy weights.', author: 'Ronnie Coleman' },
+  { text: 'The mind is the limit. As long as the mind can envision the fact that you can do something, you can do it.', author: 'Arnold Schwarzenegger' },
+  { text: 'There is no reason to be alive if you can\'t do deadlift.', author: 'J\u00F3n P\u00E1ll Sigmarsson' },
+  { text: 'To give anything less than your best is to sacrifice the gift.', author: 'Steve Prefontaine' },
+  { text: 'The only place where success comes before work is in the dictionary.', author: 'Vidal Sassoon' },
+  { text: 'What we face may look insurmountable. But I learned something from all those years of training. I learned something from all those sets and reps. That there is no such thing as failure.', author: 'Arnold Schwarzenegger' },
+  { text: 'Motivation is what gets you started. Habit is what keeps you going.', author: 'Jim Ryun' },
+  { text: 'The difference between the impossible and the possible lies in a person\'s determination.', author: 'Tommy Lasorda' },
+  { text: 'To keep the body in good health is a duty, otherwise we shall not be able to keep our mind strong and clear.', author: 'Buddha' },
+  { text: 'A champion is someone who gets up when they can\'t.', author: 'Jack Dempsey' },
+  { text: 'The real workout starts when you want to stop.', author: 'Ronnie Coleman' },
+  { text: 'Strength is the product of struggle.', author: 'Marcus Tullius Cicero' },
+  { text: 'I don\'t stop when I\'m tired. I stop when I\'m done.', author: 'David Goggins' },
+  { text: 'The more you sweat in training, the less you bleed in combat.', author: 'Richard Marcinko' },
+  { text: 'Your love for what you do and willingness to push yourself where others aren\'t prepared to go is what will make you great.', author: 'Laurence Shahlaei' },
+  { text: 'Not every day is going to be a good day. Just make sure you show up.', author: 'Dorian Yates' },
+]
+
+function getDailyQuote(): { text: string; author: string } {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000)
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -112,14 +159,20 @@ export function HomePage() {
   const { workouts, loadWorkouts } = useHistoryStore()
   const { routines, fetchRoutines } = useRoutineStore()
   const { exercises, fetchExercises } = useExerciseStore()
+  const { activeGoals, loadActiveGoals } = useProfileStore()
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
+
+  const dailyQuote = useMemo(() => getDailyQuote(), [])
 
   // Load data on mount
   useEffect(() => {
     loadWorkouts()
     fetchExercises()
-    if (user) fetchRoutines(user.id)
+    if (user) {
+      fetchRoutines(user.id)
+      loadActiveGoals(user.id)
+    }
   }, [user])
 
   // ─── Derived stats ──────────────────────────────────────────
@@ -209,6 +262,44 @@ export function HomePage() {
 
   const currentMonthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   const firstDayOffset = heatmapData.length > 0 ? heatmapData[0].date.getDay() : 0
+
+  // ─── Muscle Distribution Data (This Week Only) ──────────────────────────
+  const muscleDistribution = useMemo(() => {
+    const now = new Date()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    const thisWeekWorkouts = workouts.filter((w) => new Date(w.createdAt) >= startOfWeek)
+
+    const muscleGroups = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Core']
+    const muscleData: Record<string, number> = {}
+
+    thisWeekWorkouts.forEach(workout => {
+      const exercise = exercises.find(e => e.id === workout.exerciseId)
+        || EXERCISES_SEED.find(e => e.id === workout.exerciseId)
+      if (exercise) {
+        const name = exercise.name.toLowerCase()
+        const categories: string[] = []
+        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly')) categories.push('Chest')
+        if (name.includes('bicep') || name.includes('curl')) categories.push('Biceps')
+        if (name.includes('tricep') || name.includes('dip') || name.includes('extension')) categories.push('Triceps')
+        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press')) categories.push('Quads')
+        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl')) categories.push('Hamstrings')
+        if (name.includes('shoulder') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) categories.push('Shoulders')
+        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back')) categories.push('Back')
+        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core')) categories.push('Core')
+        if (categories.length === 0) categories.push('Core')
+        categories.forEach(cat => { muscleData[cat] = (muscleData[cat] || 0) + workout.repCount })
+      }
+    })
+
+    const maxReps = Math.max(...Object.values(muscleData), 1)
+    return muscleGroups.map(group => ({
+      name: group,
+      value: ((muscleData[group] || 0) / maxReps) * 100
+    }))
+  }, [workouts, exercises])
 
   // ─── Recent workouts ───────────────────────────────────────
 
@@ -313,35 +404,32 @@ export function HomePage() {
         </motion.div>
       </ScrollSection>
 
-      {/* ─── Calendar + Weekly Stats (split layout) ────────── */}
+      {/* ─── Dashboard Grid ──────────────────────────────────── */}
       <ScrollSection>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Activity Heatmap — full month */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                {currentMonthLabel}
-              </h2>
-              <Calendar size={14} className="text-gray-600" />
-            </div>
-            <div className="bg-dark-800 border border-dark-700 p-3">
+        <div className="bg-dark-800 border border-dark-700 p-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+            {/* ── TOP-LEFT: Calendar ── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  {currentMonthLabel}
+                </h2>
+                <Calendar size={14} className="text-gray-600" />
+              </div>
               <div className="grid grid-cols-7 gap-1">
-                {/* Day labels */}
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
                   <div key={i} className="text-[8px] text-gray-600 text-center font-mono">
                     {day}
                   </div>
                 ))}
-                {/* Pad cells for first day offset */}
                 {Array.from({ length: firstDayOffset }).map((_, i) => (
                   <div key={`pad-${i}`} />
                 ))}
-                {/* Heatmap cells */}
                 {heatmapData.map((day, i) => {
                   const isToday = day.date.toDateString() === new Date().toDateString()
                   const hasWorkout = day.count > 0
                   const bg = hasWorkout ? 'bg-cyan-500/40' : 'bg-dark-700/60'
-
                   return (
                     <motion.div
                       key={i}
@@ -360,7 +448,6 @@ export function HomePage() {
                   )
                 })}
               </div>
-              {/* Legend */}
               <div className="flex items-center justify-end gap-1.5 mt-2">
                 <div className="w-2.5 h-2.5 bg-dark-700/60" />
                 <span className="text-[8px] text-gray-600">No workout</span>
@@ -368,58 +455,160 @@ export function HomePage() {
                 <span className="text-[8px] text-gray-600">Workout</span>
               </div>
             </div>
-          </div>
 
-          {/* Weekly Stats — right half */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">This Week</h2>
-              <BarChart3 size={14} className="text-gray-600" />
+            {/* ── TOP-RIGHT: Muscle Distribution ── */}
+            <div className="flex items-center justify-center min-h-[320px]">
+              <div className="w-full max-w-[440px]">
+                <MuscleDistributionChart data={muscleDistribution} />
+              </div>
             </div>
-            <div className="bg-dark-800 border border-dark-700 p-3 space-y-2">
-              {/* Workouts */}
-              <motion.div
-                className="flex items-center gap-3 p-2.5 bg-dark-700/40 border border-dark-600/50"
-                whileHover={{ x: 4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                <div className="w-9 h-9 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/30 flex-shrink-0">
-                  <TrendingUp size={16} className="text-cyan-400" />
+
+            {/* ── BOTTOM-LEFT: This Week Stats + Daily Bars ── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">This Week</h2>
+                <BarChart3 size={14} className="text-gray-600" />
+              </div>
+              <div className="space-y-1.5">
+                <motion.div
+                  className="flex items-center gap-3 p-2 bg-dark-700/40 border border-dark-600/50"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  <div className="w-8 h-8 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/30 flex-shrink-0">
+                    <TrendingUp size={14} className="text-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-white leading-none">{stats.workoutsThisWeek}</p>
+                    <p className="text-gray-500 text-[10px]">Workouts</p>
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="flex items-center gap-3 p-2 bg-dark-700/40 border border-dark-600/50"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  <div className="w-8 h-8 flex items-center justify-center bg-purple-500/15 border border-purple-500/30 flex-shrink-0">
+                    <Dumbbell size={14} className="text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-white leading-none">{stats.totalReps}</p>
+                    <p className="text-gray-500 text-[10px]">Total Reps</p>
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="flex items-center gap-3 p-2 bg-dark-700/40 border border-dark-600/50"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  <div className="w-8 h-8 flex items-center justify-center bg-green-500/15 border border-green-500/30 flex-shrink-0">
+                    <Timer size={14} className="text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-white leading-none">{formatDuration(stats.totalTime)}</p>
+                    <p className="text-gray-500 text-[10px]">Active Time</p>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Daily Quote */}
+              <div className="bg-dark-700/40 border border-dark-600/50 p-3 mt-2">
+                <div className="flex items-start gap-2">
+                  <span className="text-cyan-400/60 text-lg leading-none mt-0.5">“</span>
+                  <div>
+                    <p className="text-[11px] text-gray-300 italic leading-relaxed">{dailyQuote.text}</p>
+                    <p className="text-[10px] text-gray-500 mt-1.5">{dailyQuote.author}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-white leading-none">{stats.workoutsThisWeek}</p>
-                  <p className="text-gray-500 text-[11px]">Workouts</p>
-                </div>
-              </motion.div>
-              {/* Total Reps */}
-              <motion.div
-                className="flex items-center gap-3 p-2.5 bg-dark-700/40 border border-dark-600/50"
-                whileHover={{ x: 4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                <div className="w-9 h-9 flex items-center justify-center bg-purple-500/15 border border-purple-500/30 flex-shrink-0">
-                  <Dumbbell size={16} className="text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white leading-none">{stats.totalReps}</p>
-                  <p className="text-gray-500 text-[11px]">Total Reps</p>
-                </div>
-              </motion.div>
-              {/* Active Time */}
-              <motion.div
-                className="flex items-center gap-3 p-2.5 bg-dark-700/40 border border-dark-600/50"
-                whileHover={{ x: 4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                <div className="w-9 h-9 flex items-center justify-center bg-green-500/15 border border-green-500/30 flex-shrink-0">
-                  <Timer size={16} className="text-green-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white leading-none">{formatDuration(stats.totalTime)}</p>
-                  <p className="text-gray-500 text-[11px]">Active Time</p>
-                </div>
-              </motion.div>
+              </div>
             </div>
+
+            {/* ── BOTTOM-RIGHT: Goals ── */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 mb-3">
+                <Target size={12} className="text-cyan-400" />
+                <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">Goals</span>
+              </div>
+
+              {activeGoals.length > 0 ? (
+                <div className="flex flex-wrap gap-6 items-center justify-center flex-1">
+                  {activeGoals.slice(0, 4).map((goal) => {
+                    const progress = Math.min((goal.currentValue / goal.targetValue) * 100, 100)
+                    const isComplete = goal.currentValue >= goal.targetValue
+                    const circumference = 2 * Math.PI * 44
+                    const strokeDashoffset = circumference - (progress / 100) * circumference
+
+                    return (
+                      <motion.div
+                        key={goal.id}
+                        className="flex flex-col items-center gap-2"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <div className="relative w-40 h-40">
+                          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                            <circle
+                              cx="50" cy="50" r="44"
+                              fill="none"
+                              stroke="rgba(55, 65, 81, 0.4)"
+                              strokeWidth="7"
+                            />
+                            <motion.circle
+                              cx="50" cy="50" r="44"
+                              fill="none"
+                              stroke={isComplete ? '#06b6d4' : progress >= 80 ? '#06b6d4' : '#0891b2'}
+                              strokeWidth="7"
+                              strokeLinecap="round"
+                              strokeDasharray={circumference}
+                              initial={{ strokeDashoffset: circumference }}
+                              animate={{ strokeDashoffset }}
+                              transition={{ duration: 1.2, delay: 0.2, ease: 'easeOut' }}
+                              style={{
+                                filter: isComplete ? 'drop-shadow(0 0 10px rgba(6, 182, 212, 0.6))' : 'drop-shadow(0 0 4px rgba(6, 182, 212, 0.2))',
+                              }}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className={`text-2xl font-bold leading-none ${isComplete ? 'text-cyan-400' : 'text-white'}`}>
+                              {progress.toFixed(0)}%
+                            </span>
+                            {isComplete ? (
+                              <Zap size={14} className="text-cyan-400 mt-1" />
+                            ) : (
+                              <span className="text-[10px] text-gray-500 mt-1">
+                                {goal.currentValue}/{goal.targetValue}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-gray-400">
+                          {GOAL_TYPE_LABELS[goal.goalType].replace(' Goal', '')}
+                        </p>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <motion.button
+                  onClick={() => navigate(ROUTES.PROFILE)}
+                  className="w-full p-6 bg-dark-700/40 border border-dashed border-dark-600/60 hover:border-cyan-500/30 transition-all group flex-1 flex items-center justify-center"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 rounded-full">
+                      <Target size={28} className="text-cyan-400/50 group-hover:text-cyan-400 transition-colors" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400 group-hover:text-white transition-colors">Set a Weekly Goal</p>
+                      <p className="text-[10px] text-gray-600 mt-0.5">Track your progress here</p>
+                    </div>
+                  </div>
+                </motion.button>
+              )}
+            </div>
+
           </div>
         </div>
       </ScrollSection>
@@ -587,6 +776,6 @@ export function HomePage() {
           </div>
         </div>
       </Modal>
-\    </div>
+    </div>
   )
 }

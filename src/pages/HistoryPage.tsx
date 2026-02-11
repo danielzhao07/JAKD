@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { Modal } from '@/components/shared/Modal'
 import { MuscleDistributionChart } from '@/components/charts/MuscleDistributionChart'
+import { MuscleHitBarChart } from '@/components/charts/MuscleHitBarChart'
 import { LineChart } from '@/components/charts/LineChart'
 import { useHistoryStore } from '@/store/historyStore'
 import { useAuthStore } from '@/store/authStore'
@@ -219,6 +220,7 @@ export function HistoryPage() {
   const [videoStatsView, setVideoStatsView] = useState<'stats' | 'charts'>('stats')
   const [muscleDistributionPeriod, setMuscleDistributionPeriod] = useState<'week' | 'month' | '3months' | 'year'>('month')
   const [muscleDistributionDropdownOpen, setMuscleDistributionDropdownOpen] = useState(false)
+  const [calendarView, setCalendarView] = useState<'month' | 'year'>('month')
 
   // Workout sessions state
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionModel[]>([])
@@ -264,6 +266,23 @@ export function HistoryPage() {
     const totalDuration = workoutSessions.reduce((sum, s) => sum + s.durationSeconds, 0)
     const totalSets = workoutSessions.reduce((sum, s) => sum + s.completedSets, 0)
 
+    // Advanced stats
+    const heaviestLift = Math.max(
+      ...workoutSessions.flatMap(s => 
+        s.exercisesData.flatMap(ex => 
+          ex.sets.filter(set => set.completed).map(set => {
+            const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : (set.weight || 0)
+            return weight
+          })
+        )
+      ),
+      0
+    )
+    
+    const workoutDensity = totalSessions > 0 && totalDuration > 0
+      ? (totalSets / (totalDuration / 60)).toFixed(1) // sets per minute
+      : '0'
+
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - (6 - i))
@@ -298,7 +317,39 @@ export function HistoryPage() {
     })
     const categoryData = Array.from(categoryDist.entries()).map(([name, value]) => ({ name, value }))
 
-    return { totalSessions, totalVolume, totalDuration, totalSets, volumeByDay, topExercises, categoryData }
+    // Muscle hit sets: specific muscle groups from sessions THIS WEEK
+    const weekStart = new Date()
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+    weekStart.setHours(0, 0, 0, 0)
+    const thisWeekSessions = workoutSessions.filter(s => new Date(s.createdAt) >= weekStart)
+    const muscleHitMap = new Map<string, number>()
+    thisWeekSessions.forEach(s => {
+      s.exercisesData.forEach(ex => {
+        const name = ex.exerciseName.toLowerCase()
+        const addMuscle = (muscle: string, sets: number) => {
+          muscleHitMap.set(muscle, (muscleHitMap.get(muscle) || 0) + sets)
+        }
+        const completedSets = ex.sets.filter(set => set.completed).length
+        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly')) addMuscle('Chest', completedSets)
+        if (name.includes('bicep') || name.includes('curl')) addMuscle('Biceps', completedSets)
+        if (name.includes('tricep') || name.includes('dip') || name.includes('extension')) addMuscle('Triceps', completedSets)
+        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press')) addMuscle('Quads', completedSets)
+        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl')) addMuscle('Hamstrings', completedSets)
+        if (name.includes('shoulder') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) addMuscle('Shoulders', completedSets)
+        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back')) addMuscle('Back', completedSets)
+        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core')) addMuscle('Core', completedSets)
+      })
+    })
+    const muscleHitData = Array.from(muscleHitMap.entries())
+      .map(([name, sets]) => ({ name, sets }))
+      .filter(d => d.sets > 0)
+      .sort((a, b) => b.sets - a.sets)
+
+    return { 
+      totalSessions, totalVolume, totalDuration, totalSets, volumeByDay, 
+      topExercises, categoryData, 
+      heaviestLift, workoutDensity, muscleHitData 
+    }
   }, [workoutSessions])
 
   // ─── Global stats (streak, calendar) ────────────────────────
@@ -351,10 +402,18 @@ export function HistoryPage() {
 
     const currentMonthCalendar = generateMonthCalendar(currentYear, currentMonth)
 
+    // Generate full year calendar (all 12 months)
+    const yearCalendar = Array.from({ length: 12 }, (_, monthIdx) => ({
+      month: monthIdx,
+      label: new Date(currentYear, monthIdx).toLocaleDateString('en-US', { month: 'short' }),
+      days: generateMonthCalendar(currentYear, monthIdx)
+    }))
+
     return {
       totalWorkouts, totalReps, totalDuration, videoWorkouts,
       avgFormScore: Math.round(avgFormScore), workoutDays: workoutDates.size,
-      currentStreak, restDays, currentMonthCalendar, currentMonth, currentYear
+      currentStreak, restDays, currentMonthCalendar, currentMonth, currentYear,
+      yearCalendar
     }
   }, [workouts, workoutSessions])
 
@@ -394,21 +453,24 @@ export function HistoryPage() {
       return date >= previousStartDate && date < previousEndDate
     })
 
-    const muscleGroups = ['Back', 'Chest', 'Core', 'Shoulders', 'Arms', 'Legs']
+    const muscleGroups = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Core']
     const muscleDistributionData: Record<string, number> = {}
 
     filteredWorkouts.forEach(workout => {
       const exercise = EXERCISES_SEED.find(e => e.id === workout.exerciseId)
       if (exercise) {
-        let category = 'Core'
         const name = exercise.name.toLowerCase()
-        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench')) category = 'Chest'
-        else if (name.includes('bicep') || name.includes('curl') || name.includes('tricep')) category = 'Arms'
-        else if (name.includes('squat') || name.includes('leg') || name.includes('lunge')) category = 'Legs'
-        else if (name.includes('shoulder') || name.includes('press') && !name.includes('bench')) category = 'Shoulders'
-        else if (name.includes('row') || name.includes('pull') || name.includes('deadlift')) category = 'Back'
-        else if (name.includes('ab') || name.includes('crunch') || name.includes('plank')) category = 'Core'
-        muscleDistributionData[category] = (muscleDistributionData[category] || 0) + workout.repCount
+        const categories: string[] = []
+        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly')) categories.push('Chest')
+        if (name.includes('bicep') || name.includes('curl')) categories.push('Biceps')
+        if (name.includes('tricep') || name.includes('dip') || name.includes('extension')) categories.push('Triceps')
+        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press')) categories.push('Quads')
+        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl')) categories.push('Hamstrings')
+        if (name.includes('shoulder') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) categories.push('Shoulders')
+        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back')) categories.push('Back')
+        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core')) categories.push('Core')
+        if (categories.length === 0) categories.push('Core')
+        categories.forEach(cat => { muscleDistributionData[cat] = (muscleDistributionData[cat] || 0) + workout.repCount })
       }
     })
 
@@ -572,10 +634,10 @@ export function HistoryPage() {
             <StatCard icon={Dumbbell} label="Workouts" value={sessionStats.totalSessions + stats.totalWorkouts} color="cyan" />
           </motion.div>
           <motion.div variants={staggerItem}>
-            <StatCard icon={TrendingUp} label="Volume" value={Math.round(sessionStats.totalVolume)} suffix="lbs" color="purple" />
+            <StatCard icon={TrendingUp} label="Total Volume" value={Math.round(sessionStats.totalVolume)} suffix="lbs" color="purple" />
           </motion.div>
           <motion.div variants={staggerItem}>
-            <StatCard icon={Timer} label="Active Time" value={Math.round(sessionStats.totalDuration / 60)} suffix="min" color="green" />
+            <StatCard icon={Target} label="Heaviest Lift" value={sessionStats.heaviestLift} suffix="lbs" color="green" />
           </motion.div>
           <motion.div variants={staggerItem}>
             <StatCard icon={Flame} label="Streak" value={stats.currentStreak} suffix="days" color="orange" />
@@ -625,89 +687,99 @@ export function HistoryPage() {
               <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                    {new Date(stats.currentYear, stats.currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    {calendarView === 'month' 
+                      ? new Date(stats.currentYear, stats.currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                      : `${stats.currentYear} Overview`
+                    }
                   </h3>
                   <div className="flex items-center gap-2">
+                    <div className="flex bg-dark-900/80 p-0.5">
+                      {(['month', 'year'] as const).map(view => (
+                        <button
+                          key={view}
+                          onClick={() => setCalendarView(view)}
+                          className={`px-3 py-1 text-xs capitalize transition-colors ${
+                            calendarView === view
+                              ? 'bg-cyan-500/80 text-white'
+                              : 'text-gray-500 hover:text-gray-300'
+                          }`}
+                        >
+                          {view}
+                        </button>
+                      ))}
+                    </div>
                     <Flame size={14} className="text-orange-400" />
                     <span className="text-orange-400 text-xs font-semibold">{stats.currentStreak} day streak</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1.5">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                    <div key={i} className="text-center text-[9px] text-gray-600 font-mono pb-1">{day}</div>
-                  ))}
-                  {stats.currentMonthCalendar.map((day, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2, delay: i * 0.01 }}
-                      className={`aspect-square flex items-center justify-center text-[9px] font-mono relative ${
-                        !day ? ''
-                          : day.isToday
-                            ? 'bg-cyan-500/30 ring-1 ring-cyan-400 text-cyan-300'
-                            : day.hasWorkout
-                              ? 'bg-cyan-500/25 text-cyan-300'
-                              : 'bg-dark-700/40 text-gray-600'
-                      }`}
-                    >
-                      {day?.day}
-                    </motion.div>
-                  ))}
-                </div>
+                {calendarView === 'month' ? (
+                  <>
+                    <div className="grid grid-cols-7 gap-1.5">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                        <div key={i} className="text-center text-[9px] text-gray-600 font-mono pb-1">{day}</div>
+                      ))}
+                      {stats.currentMonthCalendar.map((day, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.2, delay: i * 0.01 }}
+                          className={`aspect-square flex items-center justify-center text-[9px] font-mono relative ${
+                            !day ? ''
+                              : day.isToday
+                                ? 'bg-cyan-500/30 ring-1 ring-cyan-400 text-cyan-300'
+                                : day.hasWorkout
+                                  ? 'bg-cyan-500/25 text-cyan-300'
+                                  : 'bg-dark-700/40 text-gray-600'
+                          }`}
+                        >
+                          {day?.day}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                    {stats.yearCalendar.map((monthData) => (
+                      <div key={monthData.month}>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">{monthData.label}</p>
+                        <div className="grid grid-cols-7 gap-[2px]">
+                          {monthData.days.map((day, i) => (
+                            <div
+                              key={i}
+                              className={`aspect-square ${
+                                !day ? ''
+                                  : day.isToday
+                                    ? 'bg-cyan-500/40 ring-1 ring-cyan-400'
+                                    : day.hasWorkout
+                                      ? 'bg-cyan-500/30'
+                                      : 'bg-dark-700/40'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                <div className="flex items-center justify-end gap-2 mt-3">
-                  <div className="w-3 h-3 bg-dark-700/40" />
-                  <span className="text-[8px] text-gray-600">Rest</span>
-                  <div className="w-3 h-3 bg-cyan-500/25 ml-1" />
-                  <span className="text-[8px] text-gray-600">Active</span>
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-dark-700/40" />
+                    <span className="text-[8px] text-gray-600">Rest</span>
+                    <div className="w-3 h-3 bg-cyan-500/25 ml-1" />
+                    <span className="text-[8px] text-gray-600">Active</span>
+                  </div>
+                  <span className="text-[8px] text-gray-500">
+                    {stats.workoutDays} active days total
+                  </span>
                 </div>
               </div>
             </ScrollSection>
 
-            {/* Volume Trend Area Chart */}
-            {sessionStats.volumeByDay.some(d => d.volume > 0) && (
-              <ScrollSection delay={0.05}>
-                <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
-                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Volume Trend</h3>
-                  <div className="h-44">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={sessionStats.volumeByDay}>
-                        <defs>
-                          <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} />
-                        <YAxis hide />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                            border: '1px solid rgba(6, 182, 212, 0.2)',
-                            backdropFilter: 'blur(8px)',
-                            color: '#fff',
-                            fontSize: 12,
-                          }}
-                          formatter={(value: number) => [`${value.toLocaleString()} lbs`, 'Volume']}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="volume"
-                          stroke="#06b6d4"
-                          strokeWidth={2}
-                          fill="url(#volumeGradient)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </ScrollSection>
-            )}
-
-            {/* Muscle Distribution + Period Stats */}
-            <ScrollSection delay={0.1}>
+            {/* Muscle Distribution — Full Width at Top */}
+            <ScrollSection delay={0.05}>
               <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Muscle Distribution</h3>
@@ -741,7 +813,7 @@ export function HistoryPage() {
                   </div>
                 </div>
 
-                <MuscleDistributionChart data={muscleDistribution} />
+                <MuscleDistributionChart data={muscleDistribution} className="max-w-md mx-auto" />
 
                 {/* Period comparison stats */}
                 <div className="grid grid-cols-3 gap-2 mt-4">
@@ -762,6 +834,55 @@ export function HistoryPage() {
                       </div>
                     )
                   })}
+                </div>
+              </div>
+            </ScrollSection>
+
+            {/* Volume Trend + Rep Consistency — Side by Side */}
+            <ScrollSection delay={0.1}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Volume Trend Area Chart */}
+                <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Volume Trend</h3>
+                  <div className="h-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={sessionStats.volumeByDay}>
+                        <defs>
+                          <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 10 }} />
+                        <YAxis hide />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            border: '1px solid rgba(6, 182, 212, 0.2)',
+                            backdropFilter: 'blur(8px)',
+                            color: '#fff',
+                            fontSize: 11,
+                          }}
+                          formatter={(value: number) => [`${value.toLocaleString()} lbs`, 'Volume']}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="volume"
+                          stroke="#06b6d4"
+                          strokeWidth={2}
+                          fill="url(#volumeGradient)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Muscles Hit — D3 Horizontal Bar Chart */}
+                <div className="bg-dark-800/60 backdrop-blur-md border border-dark-700/60 p-4">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Muscles Hit This Week</h3>
+                  <div className="h-36">
+                    <MuscleHitBarChart data={sessionStats.muscleHitData} />
+                  </div>
                 </div>
               </div>
             </ScrollSection>

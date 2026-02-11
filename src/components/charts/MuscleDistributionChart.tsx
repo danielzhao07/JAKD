@@ -8,9 +8,10 @@ interface MuscleDistributionData {
 
 interface MuscleDistributionChartProps {
   data: MuscleDistributionData[]
+  className?: string
 }
 
-export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) {
+export function MuscleDistributionChart({ data, className }: MuscleDistributionChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
@@ -19,11 +20,12 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
 
-    const width = 500
+    const n = data.length
+    const width = 620
     const height = 500
     const centerX = width / 2
     const centerY = height / 2
-    const levels = 6
+    const levels = 5
 
     svg.attr('viewBox', `0 0 ${width} ${height}`)
       .attr('width', '100%')
@@ -64,13 +66,13 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
     feMerge.append('feMergeNode').attr('in', 'coloredBlur')
     feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
-    // Draw hexagon grid with darker styling
+    // Draw polygon grid with darker styling
     for (let level = 0; level <= levels; level++) {
-      const radius = 40 + level * 30
+      const radius = 30 + level * 36
       const points: [number, number][] = []
       
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i - Math.PI / 2
+      for (let i = 0; i < n; i++) {
+        const angle = (2 * Math.PI / n) * i - Math.PI / 2
         const x = centerX + radius * Math.cos(angle)
         const y = centerY + radius * Math.sin(angle)
         points.push([x, y])
@@ -84,9 +86,9 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
     }
 
     // Draw radial lines from center
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 3) * i - Math.PI / 2
-      const radius = 40 + levels * 30
+    for (let i = 0; i < n; i++) {
+      const angle = (2 * Math.PI / n) * i - Math.PI / 2
+      const radius = 30 + levels * 36
       const x = centerX + radius * Math.cos(angle)
       const y = centerY + radius * Math.sin(angle)
       
@@ -101,8 +103,8 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
 
     // Draw data polygon with animation
     const dataPoints: [number, number][] = data.map((item, i) => {
-      const angle = (Math.PI / 3) * i - Math.PI / 2
-      const radius = 40 + (item.value / 100) * 150
+      const angle = (2 * Math.PI / n) * i - Math.PI / 2
+      const radius = 30 + (item.value / 100) * 180
       const x = centerX + radius * Math.cos(angle)
       const y = centerY + radius * Math.sin(angle)
       return [x, y]
@@ -132,8 +134,8 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
 
     // Add orange/yellow accent line
     const accentPoints: [number, number][] = data.map((item, i) => {
-      const angle = (Math.PI / 3) * i - Math.PI / 2
-      const radius = 40 + (item.value / 100) * 150 * 0.85 // 85% of main value
+      const angle = (2 * Math.PI / n) * i - Math.PI / 2
+      const radius = 30 + (item.value / 100) * 180 * 0.85 // 85% of main value
       const x = centerX + radius * Math.cos(angle)
       const y = centerY + radius * Math.sin(angle)
       return [x, y]
@@ -154,28 +156,42 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
 
     // Draw labels with better styling
     data.forEach((item, i) => {
-      const angle = (Math.PI / 3) * i - Math.PI / 2
-      const radius = 230
+      const angle = (2 * Math.PI / n) * i - Math.PI / 2
+      const radius = 220
       const x = centerX + radius * Math.cos(angle)
       const y = centerY + radius * Math.sin(angle)
+
+      // Smart text-anchor: labels on the left side anchor end, right side anchor start
+      const angleDeg = (angle * 180) / Math.PI
+      const isLeft = angleDeg > 90 || angleDeg < -90
+      const isTop = Math.abs(angleDeg + 90) < 20 // near top
+      const isBottom = Math.abs(angleDeg - 90) < 20 // near bottom
+      const anchor = isTop || isBottom ? 'middle' : isLeft ? 'end' : 'start'
 
       svg.append('text')
         .attr('x', x)
         .attr('y', y)
-        .attr('text-anchor', 'middle')
+        .attr('text-anchor', anchor)
         .attr('dominant-baseline', 'middle')
         .attr('fill', '#94a3b8')
-        .attr('font-size', '13px')
-        .attr('font-weight', '500')
+        .attr('font-size', '12px')
+        .attr('font-weight', '400')
+        .attr('font-family', '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace')
+        .attr('letter-spacing', '0.05em')
         .attr('opacity', 0)
-        .text(item.name)
+        .text(item.name.toUpperCase())
         .transition()
         .duration(500)
         .delay(800)
         .attr('opacity', 1)
     })
 
-    // Add data points at vertices
+    // Add data points at vertices with hover tooltips
+    const tooltip = d3.select(svgRef.current.parentElement!)
+      .append('div')
+      .attr('class', 'absolute pointer-events-none px-2 py-1 text-[11px] text-white bg-gray-900/90 border border-cyan-500/20 backdrop-blur-sm opacity-0 transition-opacity duration-200 z-10')
+      .style('transform', 'translate(-50%, -120%)')
+
     dataPoints.forEach((point, i) => {
       svg.append('circle')
         .attr('cx', centerX)
@@ -183,6 +199,24 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
         .attr('r', 0)
         .attr('fill', '#06b6d4')
         .attr('filter', 'url(#glow)')
+        .attr('cursor', 'pointer')
+        .on('mouseenter', function (event) {
+          d3.select(this).attr('r', 8)
+          const rect = svgRef.current!.getBoundingClientRect()
+          const svgWidth = rect.width
+          const svgHeight = rect.height
+          const scaleX = svgWidth / width
+          const scaleY = svgHeight / height
+          tooltip
+            .html(`<span style="color:#06b6d4;font-weight:600">${data[i].name}</span> · ${Math.round(data[i].value)}%`)
+            .style('left', `${point[0] * scaleX}px`)
+            .style('top', `${point[1] * scaleY}px`)
+            .style('opacity', '1')
+        })
+        .on('mouseleave', function () {
+          d3.select(this).attr('r', 5)
+          tooltip.style('opacity', '0')
+        })
         .transition()
         .duration(500)
         .delay(1000 + i * 100)
@@ -193,8 +227,8 @@ export function MuscleDistributionChart({ data }: MuscleDistributionChartProps) 
   }, [data])
 
   return (
-    <div className="flex justify-center py-4">
-      <svg ref={svgRef} className="w-full max-w-md" />
+    <div className={`flex justify-center relative ${className || ''}`}>
+      <svg ref={svgRef} className="w-full" />
     </div>
   )
 }
