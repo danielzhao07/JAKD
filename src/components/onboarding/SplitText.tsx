@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useMemo } from 'react'
 
 interface SplitTextProps {
   text: string
@@ -14,6 +15,30 @@ export function SplitText({
   staggerDelay = 0.03,
 }: SplitTextProps) {
   const words = text.split(' ')
+  // Use word-level animation on mobile for performance
+  const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, [])
+
+  if (isMobile) {
+    return (
+      <span className={className} aria-label={text}>
+        {words.map((word, wi) => (
+          <motion.span
+            key={wi}
+            className="inline-block whitespace-pre"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.35,
+              delay: delay + wi * 0.06,
+              ease: [0.25, 0.46, 0.45, 0.94] as const,
+            }}
+          >
+            {word}{wi < words.length - 1 ? '\u00A0' : ''}
+          </motion.span>
+        ))}
+      </span>
+    )
+  }
 
   return (
     <span className={className} aria-label={text}>

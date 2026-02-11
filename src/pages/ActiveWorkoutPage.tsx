@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronDown, MoreVertical, Plus, Minus, Check, Clock, Video, Search, X, Volume2, VolumeX, Trash2 } from 'lucide-react'
+import { ChevronDown, MoreVertical, Plus, Minus, Check, Clock, Video, X, Volume2, VolumeX, Trash2 } from 'lucide-react'
 import { Button } from '@/components/shared/Button'
+import { ExerciseExplorerWidget } from '@/components/shared/ExerciseExplorerWidget'
+import { BicepCurlVariantModal, type BicepCurlVariant } from '@/components/shared/BicepCurlVariantModal'
 import { useWorkoutSessionStore, type WorkoutExercise } from '@/store/workoutSessionStore'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { useAuthStore } from '@/store/authStore'
-import { useExerciseStore } from '@/store/exerciseStore'
 import { WorkoutSessionRepository } from '@/repositories/WorkoutSessionRepository'
 import type { RoutineWithExercises } from '@/types/routine'
 import type { Exercise } from '@/types/exercise'
@@ -47,39 +48,51 @@ function isDetectableExercise(detectorType: string): boolean {
 }
 
 // Rest Timer Picker Modal
-function RestTimerPicker({ 
-  exercise, 
-  onClose, 
-  onSelect 
-}: { 
+function RestTimerPicker({
+  exercise,
+  onClose,
+  onSelect
+}: {
   exercise: WorkoutExercise
   onClose: () => void
   onSelect: (seconds: number) => void
 }) {
   const [selectedValue, setSelectedValue] = useState(exercise.restTimerSeconds)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { toggleRestTimerSound } = useWorkoutSessionStore()
-  
+  const isInitialScroll = useRef(true)
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { toggleRestTimerSound, exercises } = useWorkoutSessionStore()
+
+  // Get live exercise state for sound toggle
+  const liveExercise = exercises.find(ex => ex.exerciseId === exercise.exerciseId) || exercise
+
+  // Only scroll to position on initial mount
   useEffect(() => {
-    // Scroll to selected value
-    if (scrollRef.current) {
-      const index = REST_TIMER_OPTIONS.indexOf(selectedValue)
+    if (scrollRef.current && isInitialScroll.current) {
+      isInitialScroll.current = false
+      const index = REST_TIMER_OPTIONS.indexOf(exercise.restTimerSeconds)
       if (index >= 0) {
         const itemHeight = 44
-        scrollRef.current.scrollTop = index * itemHeight - 88 // Center the selected item
+        // Padding is 88px, so item[0] top edge starts at 88px
+        // To center item at index: scrollTop = index * itemHeight
+        scrollRef.current.scrollTop = index * itemHeight
       }
     }
-  }, [])
-  
+  }, [exercise.restTimerSeconds])
+
   const handleScroll = () => {
-    if (scrollRef.current) {
+    if (!scrollRef.current) return
+    // Debounce to avoid rapid state updates while scrolling
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current)
+    scrollTimeout.current = setTimeout(() => {
+      if (!scrollRef.current) return
       const scrollTop = scrollRef.current.scrollTop
       const itemHeight = 44
-      const centerOffset = 88
-      const index = Math.round((scrollTop + centerOffset) / itemHeight)
+      // Since padding is 88px (half of 220 - half of 44), the centered item index is:
+      const index = Math.round(scrollTop / itemHeight)
       const clampedIndex = Math.max(0, Math.min(index, REST_TIMER_OPTIONS.length - 1))
       setSelectedValue(REST_TIMER_OPTIONS[clampedIndex])
-    }
+    }, 50)
   }
   
   return (
@@ -93,13 +106,13 @@ function RestTimerPicker({
         <div className="flex items-center justify-between px-6 py-2">
           <div className="text-center flex-1">
             <h3 className="text-white font-semibold">Rest Timer</h3>
-            <p className="text-gray-500 text-sm">{exercise.exerciseName}</p>
+            <p className="text-gray-500 text-sm">{liveExercise.exerciseName}</p>
           </div>
           <button
-            onClick={() => toggleRestTimerSound(exercise.exerciseId)}
+            onClick={() => toggleRestTimerSound(liveExercise.exerciseId)}
             className="p-2 rounded-lg hover:bg-dark-700 transition-colors"
           >
-            {exercise.soundEnabled ? (
+            {liveExercise.soundEnabled ? (
               <Volume2 size={20} className="text-cyan-400" />
             ) : (
               <VolumeX size={20} className="text-gray-600" />
@@ -109,14 +122,14 @@ function RestTimerPicker({
         
         {/* Timer Picker */}
         <div className="relative h-[220px] overflow-hidden">
-          {/* Highlight band */}
-          <div className="absolute top-1/2 left-4 right-4 h-[44px] -translate-y-1/2 bg-dark-700 rounded-lg pointer-events-none border border-dark-600" />
-          
-          {/* Scrollable options */}
+          {/* Highlight band — behind text (z-0) */}
+          <div className="absolute top-1/2 left-4 right-4 h-[44px] -translate-y-1/2 bg-dark-700 rounded-lg pointer-events-none border border-dark-600 z-0" />
+
+          {/* Scrollable options — above highlight band (z-10) */}
           <div
             ref={scrollRef}
             onScroll={handleScroll}
-            className="h-full overflow-y-auto snap-y snap-mandatory hide-scrollbar"
+            className="relative z-10 h-full overflow-y-auto snap-y snap-proximity hide-scrollbar"
             style={{ paddingTop: 88, paddingBottom: 88 }}
           >
             {REST_TIMER_OPTIONS.map((value) => (
@@ -177,7 +190,7 @@ function ActiveRestTimerDisplay({
   )
 }
 
-// Add Exercise Modal - allows user to add more exercises during workout
+// Add Exercise Modal - uses ExerciseExplorerWidget
 function AddExerciseModal({
   onClose,
   onAddExercise
@@ -185,62 +198,25 @@ function AddExerciseModal({
   onClose: () => void
   onAddExercise: (exercise: Exercise) => void
 }) {
-  const { exercises: allExercises, fetchExercises } = useExerciseStore()
-  const [searchQuery, setSearchQuery] = useState('')
-  
-  useEffect(() => {
-    fetchExercises()
-  }, [fetchExercises])
-  
-  const filteredExercises = allExercises.filter((ex: Exercise) =>
-    ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ex.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-dark-900 rounded-xl w-full max-w-md max-h-[80vh] flex flex-col border border-dark-700">
-        <div className="p-4 border-b border-dark-700">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">Add Exercise</h3>
-            <button onClick={onClose} className="p-1 hover:bg-dark-700 rounded-lg transition-colors">
-              <X size={20} className="text-gray-400" />
-            </button>
-          </div>
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search exercises..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-dark-800 border border-dark-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-700"
-            />
-          </div>
+      <div className="relative bg-dark-900 rounded-xl w-full max-w-md h-[85vh] flex flex-col border border-dark-700 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-dark-700">
+          <h3 className="text-xl font-bold text-white">Add Exercise</h3>
+          <button onClick={onClose} className="p-1 hover:bg-dark-700 rounded-lg transition-colors">
+            <X size={20} className="text-gray-400" />
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {filteredExercises.map((ex: Exercise) => (
-            <button
-              key={ex.id}
-              onClick={() => {
-                onAddExercise(ex)
-                onClose()
-              }}
-              className="w-full flex items-center gap-3 p-3 bg-dark-800 hover:bg-dark-700 rounded-lg transition-colors text-left"
-            >
-              <div className="w-10 h-10 rounded-lg bg-cyan-900/30 border border-cyan-700/40 flex items-center justify-center flex-shrink-0">
-                <span className="text-cyan-400 text-sm font-bold">{ex.name.charAt(0)}</span>
-              </div>
-              <div>
-                <p className="text-white font-medium">{ex.name}</p>
-                <p className="text-gray-500 text-sm">{ex.category}</p>
-              </div>
-            </button>
-          ))}
-          {filteredExercises.length === 0 && (
-            <p className="text-gray-500 text-center py-8">No exercises found</p>
-          )}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ExerciseExplorerWidget
+            onSelect={(exercise) => {
+              onAddExercise(exercise)
+              onClose()
+            }}
+            mode="modal"
+            showCreateButton={false}
+          />
         </div>
       </div>
     </div>
@@ -705,6 +681,7 @@ export function ActiveWorkoutPage() {
   const [showInvalidWorkoutModal, setShowInvalidWorkoutModal] = useState(false)
   const [invalidWorkoutMessage, setInvalidWorkoutMessage] = useState('')
   const [showInvalidFields, setShowInvalidFields] = useState(false)
+  const [bicepCurlVariantModal, setBicepCurlVariantModal] = useState<{ exercise: WorkoutExercise; setIndex: number } | null>(null)
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
   
@@ -840,24 +817,38 @@ export function ActiveWorkoutPage() {
     navigate('/workout')
   }
   
-  // Skip the modal and go DIRECTLY to camera
-  const handleDirectVideoTrack = (exercise: WorkoutExercise, setIndex: number) => {
+  // Check if exercise is a generic "bicep curl" that needs variant selection
+  const isBicepCurlVariant = (exerciseName: string) => {
+    const lowerName = exerciseName.toLowerCase()
+    // Generic bicep curl names that need variant selection
+    return (
+      lowerName.includes('bicep curl') &&
+      !lowerName.includes('alternating') &&
+      !lowerName.includes('two arm') &&
+      !lowerName.includes('both arm')
+    )
+  }
+
+  // Navigate to camera with selected variant
+  const navigateToCamera = (exercise: WorkoutExercise, setIndex: number, detectorType?: string) => {
     // Set the video tracking context in the session store
     useWorkoutSessionStore.getState().setVideoTrackingContext(exercise.exerciseId, setIndex)
-    
+
+    // Determine final detector type
+    const finalDetectorType = detectorType || exercise.detectorType
+
     // Set up the workout store with the exercise for camera tracking
-    // Using 'as any' to avoid type issues since the exercise from workout may not have all fields
     setCurrentExercise({
       id: exercise.exerciseId,
       name: exercise.exerciseName,
-      detectorType: exercise.detectorType as 'squat' | 'bicep-curl' | 'pushup' | 'alternating-bicep-curl',
+      detectorType: finalDetectorType as 'squat' | 'bicep-curl' | 'pushup' | 'alternating-bicep-curl',
       category: exercise.exerciseCategory as 'upper-body' | 'lower-body' | 'core' | 'full-body',
       description: '',
       thumbnailUrl: null,
       createdAt: new Date().toISOString(),
     })
     setCameraMode(true)
-    
+
     // Navigate directly to the camera workout page
     navigate('/workout/start', {
       state: {
@@ -866,6 +857,25 @@ export function ActiveWorkoutPage() {
         exerciseId: exercise.exerciseId,
       }
     })
+  }
+
+  // Handle video track - check if bicep curl variant selection needed
+  const handleDirectVideoTrack = (exercise: WorkoutExercise, setIndex: number) => {
+    // Check if this is a generic bicep curl that needs variant selection
+    if (isBicepCurlVariant(exercise.exerciseName)) {
+      setBicepCurlVariantModal({ exercise, setIndex })
+    } else {
+      navigateToCamera(exercise, setIndex)
+    }
+  }
+
+  // Handle bicep curl variant selection
+  const handleBicepCurlVariantSelect = (variant: BicepCurlVariant) => {
+    if (!bicepCurlVariantModal) return
+
+    const detectorType = variant === 'alternating' ? 'alternating-bicep-curl' : 'bicep-curl'
+    navigateToCamera(bicepCurlVariantModal.exercise, bicepCurlVariantModal.setIndex, detectorType)
+    setBicepCurlVariantModal(null)
   }
   
   // Handle adding an exercise to the current workout
@@ -1035,6 +1045,17 @@ export function ActiveWorkoutPage() {
           }}
         />
       )}
+
+      {/* Bicep Curl Variant Selection Modal — only on Video icon click */}
+      {bicepCurlVariantModal && (
+        <BicepCurlVariantModal
+          isOpen={true}
+          onClose={() => setBicepCurlVariantModal(null)}
+          onSelect={handleBicepCurlVariantSelect}
+          exerciseName={bicepCurlVariantModal.exercise.exerciseName}
+        />
+      )}
+
     </div>
   )
 }

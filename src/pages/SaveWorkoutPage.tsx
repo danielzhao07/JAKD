@@ -242,6 +242,9 @@ export function SaveWorkoutPage() {
         photoUrl: photoUrl || undefined,
       })
       
+      // Track which exerciseIds already saved to workouts table (from videos)
+      const savedExerciseIds = new Set<string>()
+      
       // Save videos to workouts table (for history videos section)
       if (savedVideos && savedVideos.length > 0) {
         console.log('[SaveWorkout] Saving', savedVideos.length, 'videos to workouts table')
@@ -267,18 +270,44 @@ export function SaveWorkoutPage() {
               userId: user.id,
               exerciseId: video.exerciseId,
               repCount: totalReps,
-              durationMs: Math.round(elapsedSeconds * 1000 / Math.max(savedVideos.length, 1)), // Approximate duration per video
+              durationMs: Math.round(elapsedSeconds * 1000 / Math.max(savedVideos.length, 1)),
               formScore: video.formScore,
               avgTimePerRep: null,
               videoUrl,
               manualEntry: false,
               notes: `From ${routineName || 'Quick Workout'} - Set ${video.setIndex + 1}`,
             })
+            savedExerciseIds.add(video.exerciseId)
             console.log('[SaveWorkout] Workout entry saved for', video.exerciseName)
           } catch (videoError) {
             console.error('[SaveWorkout] Failed to save video workout:', videoError)
-            // Continue with other videos even if one fails
           }
+        }
+      }
+      
+      // Save ALL completed exercises to workouts table (for muscle distribution, stats, heatmap)
+      // Skip exercises already saved via video entries above
+      for (const ex of exercises) {
+        if (savedExerciseIds.has(ex.exerciseId)) continue
+        const completedSets = ex.sets.filter(s => s.completed)
+        if (completedSets.length === 0) continue
+        const totalReps = completedSets.reduce((sum, s) => sum + (s.reps || 0), 0)
+        if (totalReps === 0) continue
+        try {
+          await saveWorkoutToHistory({
+            userId: user.id,
+            exerciseId: ex.exerciseId,
+            repCount: totalReps,
+            durationMs: Math.round((elapsedSeconds * 1000) / exercises.length),
+            formScore: null,
+            avgTimePerRep: null,
+            videoUrl: null,
+            manualEntry: false,
+            notes: `From ${routineName || 'Quick Workout'}`,
+          })
+          console.log('[SaveWorkout] Exercise entry saved for', ex.exerciseName)
+        } catch (err) {
+          console.error('[SaveWorkout] Failed to save exercise entry:', err)
         }
       }
       

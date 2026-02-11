@@ -8,28 +8,46 @@ export function GridBackground({ className = '' }: GridBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef({ x: -1000, y: -1000 })
   const animFrameRef = useRef<number>(0)
+  const sizeRef = useRef({ w: 0, h: 0 })
+  const lastFrameTime = useRef(0)
 
-  const draw = useCallback(() => {
+  const draw = useCallback((time: number) => {
+    // Throttle to ~30fps for performance
+    if (time - lastFrameTime.current < 32) {
+      animFrameRef.current = requestAnimationFrame(draw)
+      return
+    }
+    lastFrameTime.current = time
+
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) // Cap DPR at 2
     const w = canvas.clientWidth
     const h = canvas.clientHeight
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-    ctx.scale(dpr, dpr)
+
+    // Only resize canvas when dimensions change
+    if (sizeRef.current.w !== w || sizeRef.current.h !== h) {
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      ctx.scale(dpr, dpr)
+      sizeRef.current = { w, h }
+    } else {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
 
     ctx.clearRect(0, 0, w, h)
 
-    const spacing = 40
+    // Larger spacing on mobile for fewer calculations
+    const isMobile = w < 768
+    const spacing = isMobile ? 60 : 40
     const mx = mouseRef.current.x
     const my = mouseRef.current.y
-    const radius = 200
+    const radius = isMobile ? 150 : 200
 
-    // Draw grid lines
+    // Draw grid dots — only draw near mouse on mobile
     for (let x = 0; x <= w; x += spacing) {
       for (let y = 0; y <= h; y += spacing) {
         const dx = x - mx
@@ -37,7 +55,16 @@ export function GridBackground({ className = '' }: GridBackgroundProps) {
         const dist = Math.sqrt(dx * dx + dy * dy)
         const influence = Math.max(0, 1 - dist / radius)
 
-        // Grid dots
+        // On mobile, skip dots far from mouse for perf
+        if (isMobile && influence === 0) {
+          // Still draw a very faint static dot
+          ctx.beginPath()
+          ctx.arc(x, y, 0.5, 0, Math.PI * 2)
+          ctx.fillStyle = 'rgba(0, 255, 255, 0.06)'
+          ctx.fill()
+          continue
+        }
+
         const dotSize = 0.5 + influence * 2
         const alpha = 0.08 + influence * 0.5
         ctx.beginPath()
@@ -47,7 +74,6 @@ export function GridBackground({ className = '' }: GridBackgroundProps) {
 
         // Connecting lines near mouse
         if (influence > 0.1) {
-          // Right neighbor
           if (x + spacing <= w) {
             const ndx = (x + spacing) - mx
             const ndy = y - my
@@ -63,7 +89,6 @@ export function GridBackground({ className = '' }: GridBackgroundProps) {
               ctx.stroke()
             }
           }
-          // Bottom neighbor
           if (y + spacing <= h) {
             const ndx = x - mx
             const ndy = (y + spacing) - my
@@ -104,17 +129,29 @@ export function GridBackground({ className = '' }: GridBackgroundProps) {
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
     }
 
-    const handleMouseLeave = () => {
+    const handleTouchMove = (e: TouchEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const touch = e.touches[0]
+      if (touch) {
+        mouseRef.current = { x: touch.clientX - rect.left, y: touch.clientY - rect.top }
+      }
+    }
+
+    const handleLeave = () => {
       mouseRef.current = { x: -1000, y: -1000 }
     }
 
     window.addEventListener('mousemove', handleMouseMove)
-    canvas.addEventListener('mouseleave', handleMouseLeave)
+    window.addEventListener('touchmove', handleTouchMove, { passive: true })
+    canvas.addEventListener('mouseleave', handleLeave)
+    canvas.addEventListener('touchend', handleLeave)
     animFrameRef.current = requestAnimationFrame(draw)
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
-      canvas.removeEventListener('mouseleave', handleMouseLeave)
+      window.removeEventListener('touchmove', handleTouchMove)
+      canvas.removeEventListener('mouseleave', handleLeave)
+      canvas.removeEventListener('touchend', handleLeave)
       cancelAnimationFrame(animFrameRef.current)
     }
   }, [draw])

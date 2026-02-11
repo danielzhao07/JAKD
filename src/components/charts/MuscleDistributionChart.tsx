@@ -200,7 +200,7 @@ export function MuscleDistributionChart({ data, className }: MuscleDistributionC
         .attr('fill', '#06b6d4')
         .attr('filter', 'url(#glow)')
         .attr('cursor', 'pointer')
-        .on('mouseenter', function (event) {
+        .on('mouseenter', function () {
           d3.select(this).attr('r', 8)
           const rect = svgRef.current!.getBoundingClientRect()
           const svgWidth = rect.width

@@ -7,6 +7,7 @@ import { MuscleHitBarChart } from '@/components/charts/MuscleHitBarChart'
 import { LineChart } from '@/components/charts/LineChart'
 import { useHistoryStore } from '@/store/historyStore'
 import { useAuthStore } from '@/store/authStore'
+import { useExerciseStore } from '@/store/exerciseStore'
 import { VideoStorageRepository } from '@/repositories/VideoStorageRepository'
 import { WorkoutSessionRepository, type WorkoutSessionModel } from '@/repositories/WorkoutSessionRepository'
 import { formatDuration, formatDate, formatTime } from '@/utils/helpers'
@@ -211,6 +212,7 @@ function WorkoutSessionCard({ session, onDelete }: {
 export function HistoryPage() {
   const { user } = useAuthStore()
   const { workouts, isLoading, error, loadWorkouts, deleteWorkout } = useHistoryStore()
+  const { exercises: allExercises, fetchExercises } = useExerciseStore()
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null)
   const [selectedWorkoutName, setSelectedWorkoutName] = useState<string>('')
   const [isLoadingVideo, setIsLoadingVideo] = useState(false)
@@ -228,7 +230,8 @@ export function HistoryPage() {
 
   useEffect(() => {
     loadWorkouts()
-  }, [loadWorkouts])
+    fetchExercises()
+  }, [loadWorkouts, fetchExercises])
 
   useEffect(() => {
     const loadSessions = async () => {
@@ -330,14 +333,14 @@ export function HistoryPage() {
           muscleHitMap.set(muscle, (muscleHitMap.get(muscle) || 0) + sets)
         }
         const completedSets = ex.sets.filter(set => set.completed).length
-        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly')) addMuscle('Chest', completedSets)
-        if (name.includes('bicep') || name.includes('curl')) addMuscle('Biceps', completedSets)
-        if (name.includes('tricep') || name.includes('dip') || name.includes('extension')) addMuscle('Triceps', completedSets)
-        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press')) addMuscle('Quads', completedSets)
-        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl')) addMuscle('Hamstrings', completedSets)
-        if (name.includes('shoulder') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) addMuscle('Shoulders', completedSets)
-        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back')) addMuscle('Back', completedSets)
-        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core')) addMuscle('Core', completedSets)
+        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly') || name.includes('pec')) addMuscle('Chest', completedSets)
+        if (name.includes('bicep') || name.includes('curl') || name.includes('hammer')) addMuscle('Biceps', completedSets)
+        if (name.includes('tricep') || name.includes('dip') || name.includes('extension') || name.includes('skull') || name.includes('kickback')) addMuscle('Triceps', completedSets)
+        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press') || name.includes('leg extension')) addMuscle('Quads', completedSets)
+        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl') || name.includes('rdl') || name.includes('hip thrust') || name.includes('glute')) addMuscle('Hamstrings', completedSets)
+        if (name.includes('shoulder') || name.includes('lateral raise') || name.includes('front raise') || name.includes('rear delt') || name.includes('military') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) addMuscle('Shoulders', completedSets)
+        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back') || name.includes('chin')) addMuscle('Back', completedSets)
+        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core') || name.includes('sit-up') || name.includes('situp')) addMuscle('Core', completedSets)
       })
     })
     const muscleHitData = Array.from(muscleHitMap.entries())
@@ -456,20 +459,52 @@ export function HistoryPage() {
     const muscleGroups = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Core']
     const muscleDistributionData: Record<string, number> = {}
 
+    // Helper: map exercise name to muscle groups
+    const categorizeName = (n: string): string[] => {
+      const name = n.toLowerCase()
+      const cats: string[] = []
+      if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly') || name.includes('pec')) cats.push('Chest')
+      if (name.includes('bicep') || name.includes('curl') || name.includes('hammer')) cats.push('Biceps')
+      if (name.includes('tricep') || name.includes('dip') || name.includes('extension') || name.includes('skull') || name.includes('kickback')) cats.push('Triceps')
+      if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press') || name.includes('leg extension')) cats.push('Quads')
+      if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl') || name.includes('rdl') || name.includes('hip thrust') || name.includes('glute')) cats.push('Hamstrings')
+      if (name.includes('shoulder') || name.includes('lateral raise') || name.includes('front raise') || name.includes('rear delt') || name.includes('military') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) cats.push('Shoulders')
+      if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back') || name.includes('chin')) cats.push('Back')
+      if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core') || name.includes('sit-up') || name.includes('situp')) cats.push('Core')
+      return cats
+    }
+
+    // Primary source: workout_sessions (has exercise names embedded)
+    const filteredSessions = workoutSessions.filter(s => new Date(s.createdAt) >= startDate)
+    const sessionExerciseIds = new Set<string>()
+    filteredSessions.forEach(session => {
+      session.exercisesData.forEach(ex => {
+        sessionExerciseIds.add(ex.exerciseId)
+        let categories = categorizeName(ex.exerciseName)
+        if (categories.length === 0) {
+          if (ex.exerciseCategory === 'upper-body') categories = ['Chest']
+          else if (ex.exerciseCategory === 'lower-body') categories = ['Quads']
+          else categories = ['Core']
+        }
+        const totalReps = ex.sets.filter(s => s.completed).reduce((sum, s) => sum + (s.reps || 0), 0)
+        if (totalReps > 0) {
+          categories.forEach(cat => { muscleDistributionData[cat] = (muscleDistributionData[cat] || 0) + totalReps })
+        }
+      })
+    })
+
+    // Secondary source: workouts table (for manual entries / entries not in sessions)
     filteredWorkouts.forEach(workout => {
-      const exercise = EXERCISES_SEED.find(e => e.id === workout.exerciseId)
+      if (sessionExerciseIds.has(workout.exerciseId)) return
+      const exercise = allExercises.find(e => e.id === workout.exerciseId)
+        || EXERCISES_SEED.find(e => e.id === workout.exerciseId)
       if (exercise) {
-        const name = exercise.name.toLowerCase()
-        const categories: string[] = []
-        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly')) categories.push('Chest')
-        if (name.includes('bicep') || name.includes('curl')) categories.push('Biceps')
-        if (name.includes('tricep') || name.includes('dip') || name.includes('extension')) categories.push('Triceps')
-        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press')) categories.push('Quads')
-        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl')) categories.push('Hamstrings')
-        if (name.includes('shoulder') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) categories.push('Shoulders')
-        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back')) categories.push('Back')
-        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core')) categories.push('Core')
-        if (categories.length === 0) categories.push('Core')
+        let categories = categorizeName(exercise.name)
+        if (categories.length === 0) {
+          if (exercise.category === 'upper-body') categories = ['Chest']
+          else if (exercise.category === 'lower-body') categories = ['Quads']
+          else categories = ['Core']
+        }
         categories.forEach(cat => { muscleDistributionData[cat] = (muscleDistributionData[cat] || 0) + workout.repCount })
       }
     })
@@ -509,7 +544,7 @@ export function HistoryPage() {
         sets: previousWorkouts.length
       }
     }
-  }, [workouts, muscleDistributionPeriod])
+  }, [workouts, workoutSessions, allExercises, muscleDistributionPeriod])
 
   // ─── Video workouts by exercise ─────────────────────────────
   const videoWorkoutsByExercise = useMemo(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
 import {
   Play,
@@ -28,6 +28,7 @@ import { Modal } from '@/components/shared/Modal'
 import { Button } from '@/components/shared/Button'
 import { ROUTES, EXERCISES_SEED } from '@/utils/constants'
 import { MuscleDistributionChart } from '@/components/charts/MuscleDistributionChart'
+import { WorkoutSessionRepository, type WorkoutExerciseData } from '@/repositories/WorkoutSessionRepository'
 import type { Exercise } from '@/types'
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -154,6 +155,7 @@ function getDailyQuote(): { text: string; author: string } {
 
 export function HomePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuthStore()
   const { startWorkout } = useWorkoutStore()
   const { workouts, loadWorkouts } = useHistoryStore()
@@ -162,18 +164,39 @@ export function HomePage() {
   const { activeGoals, loadActiveGoals } = useProfileStore()
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
+  const [quickStartRoutine, setQuickStartRoutine] = useState<typeof routines[0] | null>(null)
+  const [quickStartExercise, setQuickStartExercise] = useState<Exercise | null>(null)
+  const [workoutSessions, setWorkoutSessions] = useState<{ exercisesData: WorkoutExerciseData[]; createdAt: string }[]>([])
 
   const dailyQuote = useMemo(() => getDailyQuote(), [])
 
-  // Load data on mount
+  // Load data on every mount / navigation to this page
   useEffect(() => {
     loadWorkouts()
     fetchExercises()
     if (user) {
       fetchRoutines(user.id)
       loadActiveGoals(user.id)
+      // Fetch workout sessions for muscle distribution
+      WorkoutSessionRepository.getUserWorkoutSessions(user.id)
+        .then(sessions => setWorkoutSessions(sessions.map(s => ({ exercisesData: s.exercisesData, createdAt: s.createdAt }))))
+        .catch(err => console.error('[HomePage] Failed to fetch workout sessions:', err))
     }
-  }, [user])
+  }, [user, location.key])
+
+  // Re-fetch workouts whenever this page gains focus (e.g. after saving a workout)
+  useEffect(() => {
+    const handleFocus = () => {
+      loadWorkouts()
+      if (user) {
+        WorkoutSessionRepository.getUserWorkoutSessions(user.id)
+          .then(sessions => setWorkoutSessions(sessions.map(s => ({ exercisesData: s.exercisesData, createdAt: s.createdAt }))))
+          .catch(err => console.error('[HomePage] Failed to fetch workout sessions:', err))
+      }
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadWorkouts, user])
 
   // ─── Derived stats ──────────────────────────────────────────
 
@@ -270,26 +293,56 @@ export function HomePage() {
     startOfWeek.setDate(now.getDate() - now.getDay())
     startOfWeek.setHours(0, 0, 0, 0)
 
-    const thisWeekWorkouts = workouts.filter((w) => new Date(w.createdAt) >= startOfWeek)
-
     const muscleGroups = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Core']
     const muscleData: Record<string, number> = {}
 
+    // Helper: map exercise name to muscle groups (same as HistoryPage)
+    const categorizeName = (n: string): string[] => {
+      const name = n.toLowerCase()
+      const cats: string[] = []
+      if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly') || name.includes('pec')) cats.push('Chest')
+      if (name.includes('bicep') || name.includes('curl') || name.includes('hammer')) cats.push('Biceps')
+      if (name.includes('tricep') || name.includes('dip') || name.includes('extension') || name.includes('skull') || name.includes('kickback')) cats.push('Triceps')
+      if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press') || name.includes('leg extension')) cats.push('Quads')
+      if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl') || name.includes('rdl') || name.includes('hip thrust') || name.includes('glute')) cats.push('Hamstrings')
+      if (name.includes('shoulder') || name.includes('lateral raise') || name.includes('front raise') || name.includes('rear delt') || name.includes('military') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) cats.push('Shoulders')
+      if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back') || name.includes('chin')) cats.push('Back')
+      if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core') || name.includes('sit-up') || name.includes('situp')) cats.push('Core')
+      return cats
+    }
+
+    // Primary source: workout_sessions (has exercise names embedded)
+    const filteredSessions = workoutSessions.filter(s => new Date(s.createdAt) >= startOfWeek)
+    const sessionExerciseIds = new Set<string>()
+    filteredSessions.forEach(session => {
+      session.exercisesData.forEach(ex => {
+        sessionExerciseIds.add(ex.exerciseId)
+        let categories = categorizeName(ex.exerciseName)
+        if (categories.length === 0) {
+          if (ex.exerciseCategory === 'upper-body') categories = ['Chest']
+          else if (ex.exerciseCategory === 'lower-body') categories = ['Quads']
+          else categories = ['Core']
+        }
+        const totalReps = ex.sets.filter(s => s.completed).reduce((sum, s) => sum + (s.reps || 0), 0)
+        if (totalReps > 0) {
+          categories.forEach(cat => { muscleData[cat] = (muscleData[cat] || 0) + totalReps })
+        }
+      })
+    })
+
+    // Secondary source: workouts table (for manual entries / entries not in sessions)
+    const thisWeekWorkouts = workouts.filter((w) => new Date(w.createdAt) >= startOfWeek)
     thisWeekWorkouts.forEach(workout => {
+      if (sessionExerciseIds.has(workout.exerciseId)) return
       const exercise = exercises.find(e => e.id === workout.exerciseId)
         || EXERCISES_SEED.find(e => e.id === workout.exerciseId)
       if (exercise) {
-        const name = exercise.name.toLowerCase()
-        const categories: string[] = []
-        if (name.includes('push-up') || name.includes('pushup') || name.includes('bench') || name.includes('chest') || name.includes('fly')) categories.push('Chest')
-        if (name.includes('bicep') || name.includes('curl')) categories.push('Biceps')
-        if (name.includes('tricep') || name.includes('dip') || name.includes('extension')) categories.push('Triceps')
-        if (name.includes('squat') || name.includes('quad') || name.includes('lunge') || name.includes('leg press')) categories.push('Quads')
-        if (name.includes('hamstring') || name.includes('deadlift') || name.includes('leg curl')) categories.push('Hamstrings')
-        if (name.includes('shoulder') || (name.includes('press') && !name.includes('bench') && !name.includes('leg'))) categories.push('Shoulders')
-        if (name.includes('row') || name.includes('pull') || name.includes('lat') || name.includes('back')) categories.push('Back')
-        if (name.includes('ab') || name.includes('crunch') || name.includes('plank') || name.includes('core')) categories.push('Core')
-        if (categories.length === 0) categories.push('Core')
+        let categories = categorizeName(exercise.name)
+        if (categories.length === 0) {
+          if (exercise.category === 'upper-body') categories = ['Chest']
+          else if (exercise.category === 'lower-body') categories = ['Quads']
+          else categories = ['Core']
+        }
         categories.forEach(cat => { muscleData[cat] = (muscleData[cat] || 0) + workout.repCount })
       }
     })
@@ -299,7 +352,7 @@ export function HomePage() {
       name: group,
       value: ((muscleData[group] || 0) / maxReps) * 100
     }))
-  }, [workouts, exercises])
+  }, [workouts, exercises, workoutSessions])
 
   // ─── Recent workouts ───────────────────────────────────────
 
@@ -316,9 +369,15 @@ export function HomePage() {
   // ─── Exercise selection handlers ────────────────────────────
 
   const handleQuickExerciseStart = (exercise: Exercise) => {
+    setQuickStartExercise(exercise)
+  }
+
+  const confirmQuickExerciseStart = () => {
+    if (!quickStartExercise) return
     const { startEmptyWorkout, addExercise } = useWorkoutSessionStore.getState()
     startEmptyWorkout()
-    addExercise(exercise)
+    addExercise(quickStartExercise)
+    setQuickStartExercise(null)
     navigate(ROUTES.WORKOUT_ACTIVE)
   }
 
@@ -457,8 +516,9 @@ export function HomePage() {
             </div>
 
             {/* ── TOP-RIGHT: Muscle Distribution ── */}
-            <div className="flex items-center justify-center min-h-[320px]">
-              <div className="w-full max-w-[440px]">
+            <div className="flex flex-col items-center justify-center min-h-[240px] md:min-h-[320px]">
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">This Week</h2>
+              <div className="w-full max-w-[320px] md:max-w-[440px]">
                 <MuscleDistributionChart data={muscleDistribution} />
               </div>
             </div>
@@ -531,7 +591,7 @@ export function HomePage() {
               </div>
 
               {activeGoals.length > 0 ? (
-                <div className="flex flex-wrap gap-6 items-center justify-center flex-1">
+                <div className="flex flex-wrap gap-4 md:gap-6 items-center justify-center flex-1">
                   {activeGoals.slice(0, 4).map((goal) => {
                     const progress = Math.min((goal.currentValue / goal.targetValue) * 100, 100)
                     const isComplete = goal.currentValue >= goal.targetValue
@@ -546,7 +606,7 @@ export function HomePage() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.4 }}
                       >
-                        <div className="relative w-40 h-40">
+                        <div className="relative w-28 h-28 md:w-40 md:h-40">
                           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                             <circle
                               cx="50" cy="50" r="44"
@@ -636,7 +696,7 @@ export function HomePage() {
               <motion.button
                 key={routine.id}
                 variants={staggerItem}
-                onClick={() => navigate(ROUTES.WORKOUT_ACTIVE, { state: { routine } })}
+                onClick={() => setQuickStartRoutine(routine)}
                 className="flex-shrink-0 w-44 bg-dark-800 border border-dark-700 p-4 text-left transition-all duration-300 hover:border-cyan-500/30 group"
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
@@ -749,6 +809,67 @@ export function HomePage() {
           ))}
         </motion.div>
       </ScrollSection>
+
+      {/* ─── Quick Start Confirmation Modal ─────────────────── */}
+      <Modal
+        isOpen={!!quickStartRoutine}
+        onClose={() => setQuickStartRoutine(null)}
+        title="Start Workout"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-400 text-sm">
+            Are you sure you want to start a session for{' '}
+            <span className="text-white font-medium">{quickStartRoutine?.name}</span>?
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setQuickStartRoutine(null)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                navigate(ROUTES.WORKOUT_ACTIVE, { state: { routine: quickStartRoutine } })
+                setQuickStartRoutine(null)
+              }}
+              className="flex-1"
+            >
+              Start Workout
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ─── Quick Exercise Confirmation Modal ──────────────── */}
+      <Modal
+        isOpen={!!quickStartExercise}
+        onClose={() => setQuickStartExercise(null)}
+        title="Start Workout"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-400 text-sm">
+            Are you sure you want to start a session for{' '}
+            <span className="text-white font-medium">{quickStartExercise?.name}</span>?
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setQuickStartExercise(null)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmQuickExerciseStart}
+              className="flex-1"
+            >
+              Start Workout
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ─── Exercise Modal ─────────────────────────────────── */}
       <Modal
