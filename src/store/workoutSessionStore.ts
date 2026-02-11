@@ -95,6 +95,7 @@ interface WorkoutSessionState {
   
   // Exercise actions
   addExercise: (exercise: Exercise) => void
+  removeExercise: (exerciseId: string) => void
   updateExerciseNotes: (exerciseId: string, notes: string) => void
   updateRestTimer: (exerciseId: string, seconds: number) => void
   toggleRestTimerSound: (exerciseId: string) => void
@@ -373,12 +374,12 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>((set, get) => 
   // Add a new exercise to the current workout
   addExercise: (exercise) => {
     const { exercises, totalSets } = get()
-    
+
     // Determine if this is a bodyweight exercise and default weight to 'BW'
     const isBodyweight = ['push up', 'pushup', 'push-up', 'squat', 'squats', 'body weight', 'bodyweight', 'pull up', 'pullup', 'pull-up', 'dip', 'dips', 'plank', 'lunge', 'lunges', 'burpee', 'burpees']
       .some(bw => exercise.name.toLowerCase().includes(bw))
     const defaultWeight = isBodyweight ? 'BW' : ''
-    
+
     // Create new workout exercise with default sets
     const newWorkoutExercise: WorkoutExercise = {
       exerciseId: exercise.id,
@@ -395,10 +396,43 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>((set, get) => 
       restTimerSeconds: 0,
       soundEnabled: true,
     }
-    
+
     set({
       exercises: [...exercises, newWorkoutExercise],
       totalSets: totalSets + 3, // Added 3 default sets
+    })
+  },
+
+  // Remove an exercise from the current workout
+  removeExercise: (exerciseId) => {
+    const { exercises, totalSets, completedSets } = get()
+    const exerciseToRemove = exercises.find(ex => ex.exerciseId === exerciseId)
+    if (!exerciseToRemove) return
+
+    const removedSetsCount = exerciseToRemove.sets.length
+    const removedCompletedSetsCount = exerciseToRemove.sets.filter(s => s.completed).length
+
+    const newExercises = exercises
+      .filter(ex => ex.exerciseId !== exerciseId)
+      .map((ex, index) => ({ ...ex, orderIndex: index }))
+
+    // Recalculate volume
+    let totalVolume = 0
+    newExercises.forEach(ex => {
+      ex.sets.forEach(s => {
+        if (s.completed) {
+          const weight = parseFloat(s.weight) || 0
+          const reps = s.reps || 0
+          totalVolume += weight * reps
+        }
+      })
+    })
+
+    set({
+      exercises: newExercises,
+      totalSets: totalSets - removedSetsCount,
+      completedSets: completedSets - removedCompletedSetsCount,
+      totalVolume,
     })
   },
 

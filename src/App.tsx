@@ -185,6 +185,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path={ROUTES.EXERCISES_CREATE}
+        element={
+          <ProtectedRoute>
+            <CreateExercisePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path={ROUTES.PROFILE}
         element={
           <ProtectedRoute>

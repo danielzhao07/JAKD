@@ -178,4 +178,5 @@ export const ROUTES = {
   WORKOUT_CREATE_ROUTINE: '/workout/create-routine',
   WORKOUT_ADD_EXERCISES: '/workout/create-routine/add-exercises',
   WORKOUT_CREATE_EXERCISE: '/workout/create-routine/create-exercise',
+  EXERCISES_CREATE: '/exercises/create',
 } as const

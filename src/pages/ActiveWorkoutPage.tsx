@@ -344,27 +344,31 @@ function InvalidWorkoutModal({
 
 // Exercise Card Component - REDESIGNED to match reference images
 // Layout: SET | PREVIOUS | LBS (if weighted) | VIDEO (if detectable) | REPS | CHECKMARK all in ONE row
-function ExerciseCard({ 
-  exercise, 
+function ExerciseCard({
+  exercise,
   onOpenRestTimer,
   onVideoTrack,
-  showInvalidFields
-}: { 
+  showInvalidFields,
+  onRemoveExercise
+}: {
   exercise: WorkoutExercise
   onOpenRestTimer: () => void
   onVideoTrack: (setIndex: number) => void
   showInvalidFields: boolean
+  onRemoveExercise: () => void
 }) {
-  const { 
-    toggleSetCompletion, 
-    updateSetReps, 
-    updateSetWeight, 
+  const {
+    toggleSetCompletion,
+    updateSetReps,
+    updateSetWeight,
     addSet,
+    removeSet,
     updateExerciseNotes,
     startRestTimer
   } = useWorkoutSessionStore()
-  
+
   const [editingSet, setEditingSet] = useState<{ index: number; field: 'reps' | 'weight' } | null>(null)
+  const [showMenu, setShowMenu] = useState(false)
   
   // Determine if exercise uses weight
   const isBodyweight = ['push up', 'pushup', 'push-up', 'squat', 'squats', 'body weight', 'bodyweight', 'pull up', 'pullup', 'pull-up', 'dip', 'dips', 'plank', 'lunge', 'lunges', 'burpee', 'burpees']
@@ -407,16 +411,16 @@ function ExerciseCard({
   }
   
   // Calculate column grid based on what columns are visible
-  // Columns: SET(40px) | PREVIOUS(flex) | LBS(60px, optional) | VIDEO(40px, optional) | REPS(90px with buttons) | CHECK(36px)
+  // Columns: SET(40px) | PREVIOUS(flex) | LBS(60px, optional) | VIDEO(40px, optional) | REPS(90px with buttons) | CHECK(36px) | DELETE(32px)
   const getGridCols = () => {
     if (hasWeight && isDetectable) {
-      return 'grid-cols-[40px_1fr_60px_40px_90px_36px]'
+      return 'grid-cols-[40px_1fr_60px_40px_90px_36px_32px]'
     } else if (hasWeight) {
-      return 'grid-cols-[40px_1fr_60px_90px_36px]'
+      return 'grid-cols-[40px_1fr_60px_90px_36px_32px]'
     } else if (isDetectable) {
-      return 'grid-cols-[40px_1fr_40px_90px_36px]'
+      return 'grid-cols-[40px_1fr_40px_90px_36px_32px]'
     } else {
-      return 'grid-cols-[40px_1fr_90px_36px]'
+      return 'grid-cols-[40px_1fr_90px_36px_32px]'
     }
   }
   
@@ -433,9 +437,34 @@ function ExerciseCard({
             </div>
             <h3 className="text-cyan-400 font-medium">{exercise.exerciseName}</h3>
           </div>
-          <button className="p-2 rounded-lg hover:bg-dark-700 transition-colors">
-            <MoreVertical size={20} className="text-gray-400" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 rounded-lg hover:bg-dark-700 transition-colors"
+            >
+              <MoreVertical size={20} className="text-gray-400" />
+            </button>
+            {showMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-dark-800 border border-dark-600 rounded-lg shadow-lg z-20 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      onRemoveExercise()
+                      setShowMenu(false)
+                    }}
+                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-dark-700 transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Remove Exercise
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
         
         {/* Notes */}
@@ -469,6 +498,7 @@ function ExerciseCard({
           {hasWeight && <span className="text-center">Lbs</span>}
           {isDetectable && <span className="text-center"></span>}
           <span className="text-center">Reps</span>
+          <span></span>
           <span></span>
         </div>
         
@@ -608,12 +638,26 @@ function ExerciseCard({
                 <button
                   onClick={() => handleToggleCompletion(index)}
                   className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all mx-auto ${
-                    isCompleted 
-                      ? 'bg-green-500 border-green-500 text-white' 
+                    isCompleted
+                      ? 'bg-green-500 border-green-500 text-white'
                       : 'border-gray-500 hover:border-cyan-500'
                   }`}
                 >
                   {isCompleted && <Check size={14} />}
+                </button>
+
+                {/* Delete Set Button */}
+                <button
+                  onClick={() => removeSet(exercise.exerciseId, index)}
+                  disabled={exercise.sets.length === 1}
+                  className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${
+                    exercise.sets.length === 1
+                      ? 'opacity-30 cursor-not-allowed'
+                      : 'text-gray-500 hover:text-red-400 hover:bg-red-900/20'
+                  }`}
+                  title={exercise.sets.length === 1 ? 'Cannot remove last set' : 'Remove set'}
+                >
+                  <X size={14} />
                 </button>
               </div>
             )
@@ -927,6 +971,7 @@ export function ActiveWorkoutPage() {
                 onOpenRestTimer={() => setRestTimerExercise(exercise)}
                 onVideoTrack={(setIndex) => handleDirectVideoTrack(exercise, setIndex)}
                 showInvalidFields={showInvalidFields}
+                onRemoveExercise={() => useWorkoutSessionStore.getState().removeExercise(exercise.exerciseId)}
               />
             ))}
             

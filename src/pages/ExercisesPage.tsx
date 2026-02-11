@@ -1,6 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Search, X, TrendingUp, Grid3X3, MoreHorizontal, Dumbbell, Circle, ArrowLeft, BarChart3, ChevronRight, Clock } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, X, TrendingUp, Grid3X3, MoreHorizontal, Dumbbell, Circle, ArrowLeft, BarChart3, ChevronRight, Clock, Bookmark } from 'lucide-react'
 import { useHistoryStore } from '@/store/historyStore'
+import { useExerciseStore } from '@/store/exerciseStore'
+import { ROUTES } from '@/utils/constants'
 
 // Equipment types for filtering
 const EQUIPMENT_TYPES = [
@@ -721,6 +724,8 @@ function ExerciseListItem({ exercise, onTrendClick }: { exercise: LibraryExercis
 }
 
 export function ExercisesPage() {
+  const navigate = useNavigate()
+  const { exercises: customExercises, fetchExercises: fetchCustomExercises } = useExerciseStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment>('All Equipment')
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup>('All Muscles')
@@ -732,10 +737,11 @@ export function ExercisesPage() {
   
   const { workouts, loadWorkouts } = useHistoryStore()
   
-  // Load workout history on mount
+  // Load workout history and custom exercises on mount
   useEffect(() => {
     loadWorkouts()
-  }, [loadWorkouts])
+    fetchCustomExercises()
+  }, [loadWorkouts, fetchCustomExercises])
   
   // Get recent exercise IDs from workout history (unique, most recent first)
   const recentExerciseIds = useMemo(() => {
@@ -753,37 +759,79 @@ export function ExercisesPage() {
     return recentIds
   }, [workouts])
 
+  // Convert custom exercises from Supabase to LibraryExercise format
+  const savedExercises = useMemo((): LibraryExercise[] => {
+    return customExercises
+      .filter(e => e.isCustom)
+      .map(e => ({
+        id: e.id,
+        name: e.name,
+        muscleGroup: (e.category || 'other').replace(/(^|\s)\S/g, (t: string) => t.toUpperCase()),
+        equipment: (e.equipment || 'other').replace(/(^|\s)\S/g, (t: string) => t.toUpperCase()),
+        isRecent: false,
+        hasVideoDetection: false,
+      }))
+  }, [customExercises])
+
   // Filter exercises
   const filteredExercises = useMemo(() => {
     let exercises = [...SAMPLE_EXERCISES]
-    
+
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      exercises = exercises.filter(e => 
+      exercises = exercises.filter(e =>
         e.name.toLowerCase().includes(query) ||
         e.muscleGroup.toLowerCase().includes(query) ||
         e.equipment.toLowerCase().includes(query)
       )
     }
-    
+
     // Apply equipment filter
     if (selectedEquipment !== 'All Equipment') {
       exercises = exercises.filter(e => e.equipment === selectedEquipment)
     }
-    
+
     // Apply muscle filter
     if (selectedMuscle !== 'All Muscles') {
       exercises = exercises.filter(e => e.muscleGroup === selectedMuscle)
     }
-    
+
     // Apply AI detection filter
     if (aiDetectionEnabled) {
       exercises = exercises.filter(e => e.hasVideoDetection)
     }
-    
+
     return exercises
   }, [searchQuery, selectedEquipment, selectedMuscle, aiDetectionEnabled])
+
+  // Filter saved exercises with same criteria
+  const filteredSavedExercises = useMemo(() => {
+    let exercises = [...savedExercises]
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      exercises = exercises.filter(e =>
+        e.name.toLowerCase().includes(query) ||
+        e.muscleGroup.toLowerCase().includes(query) ||
+        e.equipment.toLowerCase().includes(query)
+      )
+    }
+
+    if (selectedEquipment !== 'All Equipment') {
+      exercises = exercises.filter(e => e.equipment === selectedEquipment)
+    }
+
+    if (selectedMuscle !== 'All Muscles') {
+      exercises = exercises.filter(e => e.muscleGroup === selectedMuscle)
+    }
+
+    if (aiDetectionEnabled) {
+      return [] // Custom exercises don't have AI detection
+    }
+
+    return exercises
+  }, [savedExercises, searchQuery, selectedEquipment, selectedMuscle, aiDetectionEnabled])
 
   const hasActiveFilters = selectedEquipment !== 'All Equipment' || selectedMuscle !== 'All Muscles' || aiDetectionEnabled
 
@@ -792,12 +840,8 @@ export function ExercisesPage() {
     if (hideRecentExercises || hasActiveFilters) return []
     return recentExerciseIds
       .map(id => {
-        // Try to match by exercise ID or by name similarity
-        return filteredExercises.find(e => 
-          e.id === id || 
-          e.name.toLowerCase().includes(id.toLowerCase()) ||
-          id.toLowerCase().includes(e.name.toLowerCase().split(' ')[0])
-        )
+        // Match by exact exercise ID only
+        return filteredExercises.find(e => e.id === id)
       })
       .filter((e): e is LibraryExercise => e !== undefined)
   }, [recentExerciseIds, filteredExercises, hideRecentExercises, hasActiveFilters])
@@ -811,9 +855,13 @@ export function ExercisesPage() {
       {/* Header */}
       <div className="sticky top-0 z-20 bg-dark-900 pt-4 pb-3 px-4">
         <div className="flex items-center justify-between mb-4">
-          <button className="text-blue-400 text-[17px] font-medium">Cancel</button>
-          <h1 className="text-white text-[17px] font-semibold">Add Exercise</h1>
-          <button className="text-blue-400 text-[17px] font-medium">Create</button>
+          <h1 className="text-white text-[17px] font-semibold">Exercises</h1>
+          <button
+            onClick={() => navigate(ROUTES.EXERCISES_CREATE)}
+            className="text-cyan-400 text-[17px] font-medium"
+          >
+            Create
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -905,6 +953,23 @@ export function ExercisesPage() {
               <ExerciseListItem 
                 key={exercise.id} 
                 exercise={exercise} 
+                onTrendClick={() => setSelectedExercise(exercise)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Saved Exercises (user-created) */}
+        {filteredSavedExercises.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Bookmark size={14} className="text-cyan-400" />
+              <h2 className="text-gray-500 text-[14px] font-medium">Saved Exercises</h2>
+            </div>
+            {filteredSavedExercises.map((exercise) => (
+              <ExerciseListItem
+                key={exercise.id}
+                exercise={exercise}
                 onTrendClick={() => setSelectedExercise(exercise)}
               />
             ))}

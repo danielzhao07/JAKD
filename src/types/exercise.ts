@@ -10,4 +10,6 @@ export interface Exercise {
   thumbnailUrl: string | null
   detectorType: ExerciseDetectorType
   createdAt: string
+  isCustom?: boolean
+  equipment?: string
 }

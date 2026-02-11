@@ -6,9 +6,10 @@ interface ExerciseState {
   exercises: Exercise[]
   isLoading: boolean
   error: string | null
-  
+
   // Actions
   fetchExercises: () => Promise<void>
+  refetchExercises: () => Promise<void>
 }
 
 // Map database row to Exercise type
@@ -20,6 +21,8 @@ function mapDbExercise(row: {
   thumbnail_url: string | null
   detector_type: string
   created_at: string
+  is_custom?: boolean
+  equipment?: string
 }): Exercise {
   return {
     id: row.id,
@@ -29,6 +32,8 @@ function mapDbExercise(row: {
     thumbnailUrl: row.thumbnail_url,
     detectorType: row.detector_type as ExerciseDetectorType,
     createdAt: row.created_at,
+    isCustom: row.is_custom || false,
+    equipment: row.equipment || undefined,
   }
 }
 
@@ -42,7 +47,7 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
     if (get().exercises.length > 0) return
 
     set({ isLoading: true, error: null })
-    
+
     try {
       const { data, error } = await supabase
         .from('exercises')
@@ -50,16 +55,40 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
         .order('name')
 
       if (error) throw error
-      
-      set({ 
+
+      set({
         exercises: (data || []).map((row: any) => mapDbExercise(row)),
-        isLoading: false 
+        isLoading: false
       })
     } catch (error) {
       console.error('Failed to load exercises:', error)
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to load exercises',
-        isLoading: false 
+        isLoading: false
+      })
+    }
+  },
+
+  refetchExercises: async () => {
+    set({ isLoading: true, error: null })
+
+    try {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select('*')
+        .order('name')
+
+      if (error) throw error
+
+      set({
+        exercises: (data || []).map((row: any) => mapDbExercise(row)),
+        isLoading: false
+      })
+    } catch (error) {
+      console.error('Failed to load exercises:', error)
+      set({
+        error: error instanceof Error ? error.message : 'Failed to load exercises',
+        isLoading: false
       })
     }
   },

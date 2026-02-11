@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/shared/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
+import { useExerciseStore } from '@/store/exerciseStore'
 
 const EQUIPMENT_OPTIONS = [
   'Barbell',
@@ -45,6 +46,7 @@ export function CreateExercisePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
+  const { refetchExercises } = useExerciseStore()
   const returnTo = location.state?.returnTo || '/exercises'
 
   const [exerciseName, setExerciseName] = useState('')
@@ -87,15 +89,18 @@ export function CreateExercisePage() {
 
       if (insertError) throw insertError
 
+      // Refetch exercises so the new one appears immediately
+      await refetchExercises()
+
       // If returning to create routine page, pass the exercise
       if (returnTo.includes('create-routine')) {
         navigate(returnTo, { state: { selectedExercises: [data] } })
       } else {
         navigate(returnTo)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create exercise:', err)
-      setError('Failed to create exercise. Please try again.')
+      setError(err?.message || 'Failed to create exercise. Please try again.')
     } finally {
       setIsLoading(false)
     }
