@@ -29,5 +29,13 @@ yarn-error.log*
 # Test
 coverage/
 
-# Claude settings with secrets
-.claude/settings.local.json
+# AI/Agent config
+.claude/
+DEVELOPMENT.md
+PROJECT_PLAN.md
+
+# Build cache
+tsconfig.tsbuildinfo
+
+# Supabase temp
+supabase/.temp/
