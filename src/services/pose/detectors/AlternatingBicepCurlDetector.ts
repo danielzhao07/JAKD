@@ -230,7 +230,7 @@ export class AlternatingBicepCurlDetector extends BaseDetector {
 
   validateForm(_pose: Pose): { score: number; feedback: string[] } {
     const feedback: string[] = []
-    let score = 100
+    const score = 100
 
     // For alternating curls, we don't require both arms to move together
     feedback.push('Good form!')

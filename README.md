@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/jakd-logo.png" alt="JAKD Logo" width="120" />
+  <img src="public/JAKD_TRANSPARENT.png" alt="JAKD Logo" width="120" />
 </p>
 
 <h1 align="center">JAKD</h1>
