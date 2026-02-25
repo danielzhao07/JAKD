@@ -38,30 +38,6 @@ JAKD is a full-stack fitness application that uses **MediaPipe pose estimation**
 - **Cloud sync** -- Supabase backend with auth, real-time database, and file storage
 - **Responsive design** -- mobile-first dark theme UI
 
-## Architecture
-
-```
-src/
-├── components/          # React components organized by domain
-│   ├── workout/         # Camera feed, rep counter, form feedback panel
-│   ├── exercise/        # Exercise library and selection
-│   ├── charts/          # D3.js and Recharts visualizations
-│   ├── profile/         # Account settings, goals, preferences
-│   └── shared/          # Reusable UI primitives (Button, Modal, Toast)
-├── services/            # Core business logic
-│   ├── pose/            # MediaPipe integration + exercise detectors
-│   │   └── detectors/   # PushupDetector, BicepCurlDetector, SquatDetector
-│   ├── video/           # MediaRecorder-based session recording
-│   ├── audio/           # Web Audio API workout cues
-│   └── metrics/         # Form analysis calculations
-├── repositories/        # Data access layer (Supabase queries)
-├── store/               # Zustand state management (8 stores)
-├── hooks/               # Custom hooks (useCamera, usePoseDetection, etc.)
-├── pages/               # Route-level page components
-├── types/               # TypeScript type definitions
-└── utils/               # Constants and helper functions
-```
-
 **Key design decisions:**
 
 - **Repository pattern** separates data access from UI logic, making Supabase queries testable and swappable
